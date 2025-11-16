@@ -4,15 +4,21 @@ set -e
 
 readonly SERVER="http://localhost:34080"
 
-# Init all settings to default values
+# Offer provider metadata over '/.well-known/csaf/provider-metadata.json'
 well_known_meta=0
+# Offer provider metadata over '/security/data/csaf/provider-metadata.json'
 security_data_meta=0
+# Offer provider metadata over '/advisories/csaf/provider-metadata.json'
 advisories_csaf_meta=0
+# Offer provider metadata over '/security/csaf/provider-metadata.json'
 security_csaf_meta=0
+# Offer security.txt over '/.well-known/security.txt', which contains a link to the provider metadata
 security_txt=0
+# Offer directory listings (not yet implemented)
 directory_listing=0
+# Offer a ROLIE feed for CSAF documents
 rolie_feed=0
-
+# Verify the configuration after applying it
 verify=0
 
 # Parse command line arguments
