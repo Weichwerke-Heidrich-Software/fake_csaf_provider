@@ -14,6 +14,7 @@ user_home_dir = os.environ.get('HOME') or os.path.expanduser('~')
 csaf_dir = os.path.join('csafs', 'some')
 domain = 'localhost:34080'
 # These paths are chosen deliberately obscure, so that clients rely on the metadata instead of on assumptions.
+directory_listing_base_path = "some-csaf-base-path"
 rolie_feed_path_white = "some-white-rolie-dir/some-feed.json"
 rolie_feed_csaf_dir_white = "some-white-csaf-dir-for-rolie"
 
@@ -152,14 +153,20 @@ def find_white_advisory_files():
     return files
 
 
-@app.route('/csaf/white/', methods=['GET'])
-def white_directory_listing():
-    return offer_if_enabled('directory_listing', 'TODO: directory listing')
+@app.route(f'{directory_listing_base_path}/index.txt', methods=['GET'])
+def directory_listing_index():
+    return offer_if_enabled('directory_listing', 'TODO: directory listing index.txt')
 
 
-@app.route('/csaf/white/<int:year>', methods=['GET'])
-def white_year_directory_listing(year):
-    return offer_if_enabled('directory_listing', 'TODO: directory listing')
+@app.route(f'{directory_listing_base_path}/changes.csv', methods=['GET'])
+def directory_listing_changes():
+    return offer_if_enabled('directory_listing', 'TODO: directory listing changes.csv')
+
+
+@app.route(f'{directory_listing_base_path}/<string:year>/<string:filename>', methods=['GET'])
+def dir_listing_csaf(year, filename):
+    path = os.path.join(csaf_dir, "white", year, filename)
+    return send_file(path, mimetype='application/json')
     
 
 def rolie_feed():
@@ -227,7 +234,7 @@ def rolie_feed_endpoint():
 
 
 @app.route(f'{rolie_feed_csaf_dir_white}/<string:year>/<string:filename>', methods=['GET'])
-def csaf(year, filename):
+def rolie_feed_csaf(year, filename):
     path = os.path.join(csaf_dir, "white", year, filename)
     return send_file(path, mimetype='application/json')
 
