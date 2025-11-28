@@ -13,6 +13,9 @@ app = Flask(__name__)
 user_home_dir = os.environ.get('HOME') or os.path.expanduser('~')
 csaf_dir = os.path.join('csafs', 'some')
 domain = 'localhost:34080'
+# These paths are chosen deliberately obscure, so that clients rely on the metadata instead of on assumptions.
+rolie_feed_path_white = "some-white-rolie-dir/some-feed.json"
+rolie_feed_csaf_dir_white = "some-white-csaf-dir-for-rolie"
 
 _state = {
     "well_known_meta": False,
@@ -82,7 +85,7 @@ def provider_metadata():
                     {
                         "summary": "WHITE advisories",
                         "tlp_label": "WHITE",
-                        "url": f"http://{domain}/.well-known/csaf/white/csaf-feed-tlp-white.json"
+                        "url": f"http://{domain}/{rolie_feed_path_white}"
                     }
                 ]
             }
@@ -167,11 +170,7 @@ def rolie_feed():
         "link": [
           {
             "rel": "self",
-            "href": f"http://{domain}/.well-known/csaf/white/csaf-feed-tlp-white.json"
-          },
-          {
-            "rel": "service",
-            "href": f"http://{domain}/.well-known/csaf/service.json"
+            "href": f"http://{domain}/{rolie_feed_path_white}"
           }
         ],
         "category": [
@@ -192,26 +191,26 @@ def rolie_feed():
           "link": [
             {
               "rel": "self",
-              "href": f"http://{domain}/csaf/white/{year}/{file}"
+              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}"
             },
             {
               "rel": "hash",
-              "href": f"http://{domain}/csaf/white/{year}/{file}.sha256"
+              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.sha256"
             },
             {
               "rel": "hash",
-              "href": f"http://{domain}/csaf/white/{year}/{file}.sha512"
+              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.sha512"
             },
             {
               "rel": "signature",
-              "href": f"http://{domain}/csaf/white/{year}/{file}.asc"
+              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.asc"
             }
           ],
           "published": f"{year}-01-01T10:00:00Z",
           "updated": f"{year}-01-01T10:00:00Z",
           "content": {
             "type": "application/json",
-            "src": f"http://{domain}/csaf/white/{year}/{file}"
+            "src": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}"
           },
           "format": {
             "schema": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
@@ -222,14 +221,14 @@ def rolie_feed():
     return jsonify(rolie)
 
 
-@app.route('/.well-known/csaf/white/csaf-feed-tlp-white.json', methods=['GET'])
+@app.route(rolie_feed_path_white, methods=['GET'])
 def rolie_feed_endpoint():
     return offer_if_enabled('rolie_feed', rolie_feed())
 
 
-@app.route('/csaf/<string:tlp>/<string:year>/<string:filename>', methods=['GET'])
-def csaf(tlp, year, filename):
-    path = os.path.join(csaf_dir, tlp, year, filename)
+@app.route(f'{rolie_feed_csaf_dir_white}/<string:year>/<string:filename>', methods=['GET'])
+def csaf(year, filename):
+    path = os.path.join(csaf_dir, "white", year, filename)
     return send_file(path, mimetype='application/json')
 
 
