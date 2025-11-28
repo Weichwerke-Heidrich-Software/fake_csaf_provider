@@ -68,7 +68,7 @@ def provider_metadata():
             "category": "vendor",
             "contact_details": "Contact.",
             "issuing_authority": "Test.",
-            "name": "Tets-Vendor",
+            "name": "Test-Vendor",
             "namespace": f"http://{domain}"
         },
         "role": "csaf_provider"
