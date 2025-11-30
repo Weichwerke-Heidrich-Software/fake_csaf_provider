@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pid_file="/tmp/fake_csaf_server.pid"
+pid_file="/tmp/fake_csaf_provider.pid"
 if [ -f "$pid_file" ]; then
     pid=$(cat "$pid_file")
     echo "Stopping fake CSAF server with PID $pid..."
