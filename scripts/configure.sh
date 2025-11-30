@@ -13,7 +13,9 @@ advisories_csaf_meta=0
 # Offer provider metadata over '/security/csaf/provider-metadata.json'
 security_csaf_meta=0
 # Offer security.txt over '/.well-known/security.txt', which contains a link to the provider metadata
-security_txt=0
+well_known_security_txt=0
+# Offer security.txt over '/security.txt'
+root_security_txt=0
 # Offer directory listings (not yet implemented)
 directory_listing=0
 # Offer a ROLIE feed for CSAF documents
@@ -40,8 +42,12 @@ while [[ $# -gt 0 ]]; do
             security_csaf_meta=1
             shift
             ;;
-        --security-txt)
-            security_txt=1
+        --well-known-security-txt)
+            well_known_security_txt=1
+            shift
+            ;;
+        --root-security-txt)
+            root_security_txt=1
             shift
             ;;
         --directory-listing)
@@ -57,7 +63,8 @@ while [[ $# -gt 0 ]]; do
             security_data_meta=1
             advisories_csaf_meta=1
             security_csaf_meta=1
-            security_txt=1
+            well_known_security_txt=1
+            root_security_txt=1
             dns_path=1
             directory_listing=1
             rolie_feed=1
@@ -85,7 +92,8 @@ payload=$(cat <<JSON
     "security_data_meta": $(to_bool "$security_data_meta"),
     "advisories_csaf_meta": $(to_bool "$advisories_csaf_meta"),
     "security_csaf_meta": $(to_bool "$security_csaf_meta"),
-    "security_txt": $(to_bool "$security_txt"),
+    "well_known_security_txt": $(to_bool "$well_known_security_txt"),
+    "root_security_txt": $(to_bool "$root_security_txt"),
     "directory_listing": $(to_bool "$directory_listing"),
     "rolie_feed": $(to_bool "$rolie_feed")
 }
@@ -118,7 +126,8 @@ expect_url "/.well-known/csaf/provider-metadata.json" "$well_known_meta"
 expect_url "/security/data/csaf/provider-metadata.json" "$security_data_meta"
 expect_url "/advisories/csaf/provider-metadata.json" "$advisories_csaf_meta"
 expect_url "/security/csaf/provider-metadata.json" "$security_csaf_meta"
-expect_url "/.well-known/security.txt" "$security_txt"
+expect_url "/.well-known/security.txt" "$well_known_security_txt"
+expect_url "/security.txt" "$root_security_txt"
 expect_url "/some-csaf-base-path/index.txt" "$directory_listing"
 expect_url "/some-csaf-base-path/changes.csv" "$directory_listing"
 expect_url "/some-white-rolie-dir/some-feed.json" "$rolie_feed"

@@ -27,7 +27,8 @@ def set_state(json: dict):
         _state['security_data_meta'] = json.get('security_data_meta', False)
         _state['advisories_csaf_meta'] = json.get('advisories_csaf_meta', False)
         _state['security_csaf_meta'] = json.get('security_csaf_meta', False)
-        _state['security_txt'] = json.get('security_txt', False)
+        _state['well_known_security_txt'] = json.get('well_known_security_txt', False)
+        _state['root_security_txt'] = json.get('root_security_txt', False)
         _state['directory_listing'] = json.get('directory_listing', False)
         _state['rolie_feed'] = json.get('rolie_feed', False)
 

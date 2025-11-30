@@ -43,8 +43,13 @@ def obscure_meta():
 
 
 @app.route('/.well-known/security.txt', methods=['GET'])
-def security_txt():
-    return offer_if_enabled('security_txt', security_txt_content())
+def well_known_security_txt():
+    return offer_if_enabled('well_known_security_txt', security_txt_content('/.well-known/security.txt'))
+
+
+@app.route('/security.txt', methods=['GET'])
+def root_security_txt():
+    return offer_if_enabled('root_security_txt', security_txt_content('/security.txt'))
 
 
 @app.route(f'{directory_listing_base_path}/index.txt', methods=['GET'])
