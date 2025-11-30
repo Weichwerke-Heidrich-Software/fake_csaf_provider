@@ -13,7 +13,7 @@ def security_txt_content(canonical_path: str):
     # Only the URLs behind Canonical and CSAF are supported.
     return f"""
 # Our canonical URI.
-Canonical: https://{domain}/{canonical_path}
+Canonical: https://{domain}{canonical_path}
 
 # Our security addresses.
 Contact: mailto:info@example.com
