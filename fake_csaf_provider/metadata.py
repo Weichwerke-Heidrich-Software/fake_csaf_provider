@@ -1,6 +1,6 @@
 import flask
 
-from .consts import rolie_feed_path_white
+from .consts import directory_listing_base_path, rolie_feed_path_white
 from .state import get_config
 from .util import domain, now
 
@@ -22,6 +22,12 @@ def provider_metadata():
         },
         "role": "csaf_provider"
     }
+    offer_dirlisting = get_config('directory_listing')
+    if offer_dirlisting:
+        dirlisting = {
+            "directory_url": f"http://{domain}/{directory_listing_base_path}/"
+        }
+        metadata["distributions"].append(dirlisting)
     offer_rolie = get_config('rolie_feed')
     if offer_rolie:
         rolie = {
