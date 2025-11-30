@@ -3,7 +3,19 @@ import flask
 import json
 import os
 
-_csaf_dir = os.path.join('csafs', 'some')
+
+def find_csaf_dir():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    csaf_dir = os.path.join(current_dir, 'csafs', 'some')
+    if not os.path.isdir(csaf_dir):
+        csaf_dir = os.path.join(current_dir, '..', 'csafs', 'some')
+    if not os.path.isdir(csaf_dir):
+        raise FileNotFoundError("Could not find 'csafs/some' directory")
+    print(f"Using CSAF directory: {csaf_dir}")
+    return csaf_dir
+
+
+_csaf_dir = find_csaf_dir()
 
 
 def find_white_year_dirs():
