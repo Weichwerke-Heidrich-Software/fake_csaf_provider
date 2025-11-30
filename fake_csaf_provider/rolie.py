@@ -2,9 +2,15 @@ import flask
 
 from .consts import rolie_feed_path_white, rolie_feed_csaf_dir_white
 from .files import find_white_advisory_files
+from .state import get_current_release_date, get_latest_release_date
 from .util import domain, now
 
 def rolie_feed():
+    updated = get_latest_release_date()
+    if updated:
+        updated_str = updated.replace(microsecond=0).isoformat()
+    else:
+        updated_str = now()
     rolie = {
       "feed": {
         "id": "csaf-feed-tlp-white",
@@ -21,11 +27,16 @@ def rolie_feed():
             "term": "csaf"
           }
         ],
-        "updated": now(),
+        "updated": updated_str,
         "entry": []
       }
     }
     for year, file in find_white_advisory_files():
+      date = get_current_release_date(file)
+      if date:
+        updated_str = date.replace(microsecond=0).isoformat()
+      else:
+        updated_str = now()
       id = file[:-5] if file.endswith('.json') else file
       entry = {
           "id": f"{id}",
@@ -48,8 +59,8 @@ def rolie_feed():
               "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.asc"
             }
           ],
-          "published": f"{year}-01-01T10:00:00Z",
-          "updated": f"{year}-01-01T10:00:00Z",
+          "published": updated_str, # This is not technically correct, but irrelevant for our purposes.
+          "updated": updated_str,
           "content": {
             "type": "application/json",
             "src": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}"

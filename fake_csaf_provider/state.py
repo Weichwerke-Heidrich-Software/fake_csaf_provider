@@ -1,5 +1,8 @@
+import datetime
 import flask
 import threading
+
+from .files import collect_current_release_dates
 
 _state = {
     "well_known_meta": False,
@@ -11,6 +14,11 @@ _state = {
     "rolie_feed": False,
 }
 _state_lock = threading.Lock()
+
+_cache = {
+    "current_release_dates": None,
+}
+_cache_lock = threading.Lock()
 
 
 def set_state(json: dict):
@@ -48,3 +56,23 @@ def offer_if_enabled(feature_name, return_value):
         if not offer:
             flask.abort(404)
     return return_value
+
+
+def initialize_current_release_dates():
+    dates = collect_current_release_dates()
+    with _cache_lock:
+        _cache['current_release_dates'] = dates
+
+
+def get_current_release_date(filename: str) -> datetime.datetime | None:
+    with _cache_lock:
+        dates = _cache['current_release_dates']
+        return dates.get(filename)
+
+
+def get_latest_release_date() -> datetime.datetime | None:
+    with _cache_lock:
+        dates = _cache['current_release_dates']
+        if not dates:
+            return None
+        return max(dates.values())
