@@ -1,6 +1,7 @@
 import flask
 
 from .consts import directory_listing_base_path, rolie_feed_csaf_dir_white, rolie_feed_path_white
+from .dirlisting import changes_csv, index_txt
 from .files import send_csaf
 from .metadata import provider_metadata
 from .rolie import rolie_feed
@@ -48,12 +49,12 @@ def security_txt():
 
 @app.route(f'{directory_listing_base_path}/index.txt', methods=['GET'])
 def directory_listing_index():
-    return offer_if_enabled('directory_listing', 'TODO: directory listing index.txt')
+    return offer_if_enabled('directory_listing', index_txt())
 
 
 @app.route(f'{directory_listing_base_path}/changes.csv', methods=['GET'])
 def directory_listing_changes():
-    return offer_if_enabled('directory_listing', 'TODO: directory listing changes.csv')
+    return offer_if_enabled('directory_listing', changes_csv())
 
 
 @app.route(f'{directory_listing_base_path}/<string:year>/<string:filename>', methods=['GET'])

@@ -67,7 +67,19 @@ def initialize_current_release_dates():
 def get_current_release_date(year: str, filename: str) -> datetime.datetime | None:
     with _cache_lock:
         dates = _cache['current_release_dates']
+        if not dates:
+            return None
         return dates.get((year, filename))
+
+
+def get_sorted_release_dates() -> dict[(str, str), datetime.datetime]:
+    sorted_dates = {}
+    with _cache_lock:
+        dates = _cache['current_release_dates']
+        if not dates:
+            return sorted_dates
+        sorted_list = sorted(dates.items(), key=lambda item: item[1], reverse=True)
+        return sorted_list
 
 
 def get_latest_release_date() -> datetime.datetime | None:
