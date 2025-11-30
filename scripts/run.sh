@@ -10,7 +10,7 @@ $venv_py -m ensurepip || true
 $venv_py -m pip install pip
 $venv_py -m pip install -r ./requirements.txt
 
-$venv_py fake_csaf_server.py &
-echo $! > /tmp/fake_csaf_server.pid
+$venv_py -m fake_csaf_provider.main &
+echo $! > /tmp/fake_csaf_provider.pid
 
 sleep 1
