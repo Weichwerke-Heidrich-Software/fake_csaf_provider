@@ -32,7 +32,7 @@ def rolie_feed():
       }
     }
     for year, file in find_white_advisory_files():
-      date = get_current_release_date(file)
+      date = get_current_release_date(year, file)
       if date:
         updated_str = date.replace(microsecond=0).isoformat()
       else:

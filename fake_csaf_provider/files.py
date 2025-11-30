@@ -3,11 +3,11 @@ import flask
 import json
 import os
 
-csaf_dir = os.path.join('csafs', 'some')
+_csaf_dir = os.path.join('csafs', 'some')
 
 
 def find_white_year_dirs():
-    path = os.path.join(csaf_dir, 'white')
+    path = os.path.join(_csaf_dir, 'white')
     dirs = []
     for entry in os.listdir(path):
         full_path = os.path.join(path, entry)
@@ -17,7 +17,7 @@ def find_white_year_dirs():
 
 
 def find_white_advisory_files():
-    path = os.path.join(csaf_dir, 'white')
+    path = os.path.join(_csaf_dir, 'white')
     files = []
     for year in find_white_year_dirs():
         year_path = os.path.join(path, year)
@@ -29,7 +29,7 @@ def find_white_advisory_files():
 
 
 def send_csaf(tlp, year, filename):
-    path = os.path.join(csaf_dir, tlp, year, filename)
+    path = os.path.join(_csaf_dir, tlp, year, filename)
     return flask.send_file(path, mimetype='application/json')
 
 
@@ -43,13 +43,13 @@ def read_current_release_date(path: str) -> datetime.datetime:
         raise ValueError("current_release_date not found in JSON") from err
 
 
-def collect_current_release_dates() -> dict[str, datetime.datetime]:
+def collect_current_release_dates() -> dict[(str, str), datetime.datetime]:
     dates = {}
     for year, filename in find_white_advisory_files():
-        path = os.path.join(csaf_dir, 'white', year, filename)
+        path = os.path.join(_csaf_dir, 'white', year, filename)
         try:
             date = read_current_release_date(path)
-            dates[filename] = date
+            dates[(year, filename)] = date
         except ValueError:
             continue
     return dates

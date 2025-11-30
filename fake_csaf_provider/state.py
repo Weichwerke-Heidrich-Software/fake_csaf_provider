@@ -64,10 +64,10 @@ def initialize_current_release_dates():
         _cache['current_release_dates'] = dates
 
 
-def get_current_release_date(filename: str) -> datetime.datetime | None:
+def get_current_release_date(year: str, filename: str) -> datetime.datetime | None:
     with _cache_lock:
         dates = _cache['current_release_dates']
-        return dates.get(filename)
+        return dates.get((year, filename))
 
 
 def get_latest_release_date() -> datetime.datetime | None:
