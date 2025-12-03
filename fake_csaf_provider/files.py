@@ -40,6 +40,11 @@ def find_white_advisory_files():
     return files
 
 
+def csaf_file_exists(tlp, year, filename):
+    path = os.path.join(_csaf_dir, tlp, year, filename)
+    return os.path.isfile(path)
+
+
 def send_csaf(tlp, year, filename):
     path = os.path.join(_csaf_dir, tlp, year, filename)
     return flask.send_file(path, mimetype='application/json')

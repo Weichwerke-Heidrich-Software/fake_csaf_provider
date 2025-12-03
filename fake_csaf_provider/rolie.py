@@ -1,7 +1,7 @@
 import flask
 
 from .consts import rolie_feed_path_white, rolie_feed_csaf_dir_white
-from .files import find_white_advisory_files
+from .files import csaf_file_exists, find_white_advisory_files
 from .state import get_current_release_date, get_latest_release_date
 from .util import domain, now
 
@@ -44,31 +44,34 @@ def rolie_feed():
           "link": [
             {
               "rel": "self",
-              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}"
-            },
-            {
-              "rel": "hash",
-              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.sha256"
-            },
-            {
-              "rel": "hash",
-              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.sha512"
-            },
-            {
-              "rel": "signature",
-              "href": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}.asc"
+              "href": f"http://{domain}{rolie_feed_csaf_dir_white}/{year}/{file}"
             }
           ],
           "published": updated_str, # This is not technically correct, but irrelevant for our purposes.
           "updated": updated_str,
           "content": {
             "type": "application/json",
-            "src": f"http://{domain}/{rolie_feed_csaf_dir_white}/{year}/{file}"
+            "src": f"http://{domain}{rolie_feed_csaf_dir_white}/{year}/{file}"
           },
           "format": {
             "schema": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
             "version": "2.0"
           }
         }
+      if csaf_file_exists("white", year, f"{file}.asc"):
+          entry["link"].append({
+              "rel": "signature",
+              "href": f"http://{domain}{rolie_feed_csaf_dir_white}/{year}/{file}.asc"
+          })
+      if csaf_file_exists("white", year, f"{file}.sha256"):
+          entry["link"].append({
+              "rel": "hash",
+              "href": f"http://{domain}{rolie_feed_csaf_dir_white}/{year}/{file}.sha256"
+          })
+      if csaf_file_exists("white", year, f"{file}.sha512"):
+          entry["link"].append({
+              "rel": "hash",
+              "href": f"http://{domain}{rolie_feed_csaf_dir_white}/{year}/{file}.sha512"
+          })
       rolie['feed']['entry'].append(entry)
     return flask.jsonify(rolie)
