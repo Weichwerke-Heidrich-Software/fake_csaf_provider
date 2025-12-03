@@ -28,7 +28,7 @@ Preferred-Languages: en, de
 Policy: https://{domain}/policy
 
 # Our security advisories
-CSAF: http://{domain}/obscure/path/to/provider-metadata.json
+CSAF: https://{domain}/obscure/path/to/provider-metadata.json
 
 Expires: {expires}
 """

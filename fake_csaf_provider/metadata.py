@@ -5,7 +5,7 @@ from .state import get_config
 from .util import domain, now
 
 def provider_metadata():
-    canonical_url = f"http://{domain}/obscure/path/to/provider-metadata.json"
+    canonical_url = f"https://{domain}/obscure/path/to/provider-metadata.json"
     metadata = {
         "canonical_url": canonical_url,
         "distributions": [],
@@ -18,14 +18,14 @@ def provider_metadata():
             "contact_details": "Contact.",
             "issuing_authority": "Test.",
             "name": "Test-Vendor",
-            "namespace": f"http://{domain}"
+            "namespace": f"https://{domain}"
         },
         "role": "csaf_provider"
     }
     offer_dirlisting = get_config('directory_listing')
     if offer_dirlisting:
         dirlisting = {
-            "directory_url": f"http://{domain}/{directory_listing_base_path}/"
+            "directory_url": f"https://{domain}/{directory_listing_base_path}/"
         }
         metadata["distributions"].append(dirlisting)
     offer_rolie = get_config('rolie_feed')
@@ -36,7 +36,7 @@ def provider_metadata():
                 {
                     "summary": "WHITE advisories",
                     "tlp_label": "WHITE",
-                    "url": f"http://{domain}/{rolie_feed_path_white}"
+                    "url": f"https://{domain}/{rolie_feed_path_white}"
                 }
             ]
         }

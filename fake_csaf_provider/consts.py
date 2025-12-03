@@ -1,4 +1,4 @@
-port = 34080
+port = 34443
 domain = f'localhost:{port}'
 # These paths are chosen deliberately obscure, so that clients rely on the metadata instead of on assumptions.
 directory_listing_base_path = "/some-csaf-base-path"
