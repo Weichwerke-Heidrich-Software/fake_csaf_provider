@@ -2,7 +2,8 @@
 
 set -e
 
-readonly SERVER="http://localhost:34080"
+readonly SERVER="https://localhost:34443"
+readonly CERT_PATH="./crypto/ca.crt.pem"
 
 # Offer provider metadata over '/.well-known/csaf/provider-metadata.json'
 well_known_meta=0
@@ -101,7 +102,11 @@ JSON
 )
 
 # Send PATCH request to configure the fake CSAF server
-curl -X PATCH -H "Content-Type: application/json" -d "$payload" "${SERVER}/config"
+curl -X PATCH \
+    -H "Content-Type: application/json" \
+    -d "$payload" \
+    --cacert "${CERT_PATH}" \
+    "${SERVER}/config"
 
 if [ "$verify" -eq 0 ]; then
     exit 0
@@ -114,7 +119,7 @@ function expect_url() {
     if [ "$expect_url_to_exist" -eq 0 ]; then
         expected_code="404"
     fi
-    local actual_code=$(curl -o /dev/null -s -w "%{http_code}" "${SERVER}${path}")
+    local actual_code=$(curl --cacert "${CERT_PATH}" -o /dev/null -s -w "%{http_code}" "${SERVER}${path}")
     if [ "$actual_code" -ne "$expected_code" ]; then
         echo "Expected HTTP status code $expected_code for ${path}, but got $actual_code"
         return 1
