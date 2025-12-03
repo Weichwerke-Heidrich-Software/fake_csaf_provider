@@ -10,7 +10,7 @@ A small server application that can mimic several variants of CSAF providers, in
 > [!NOTE]
 > Due to its history as a test util originally intended for only one person, the usage is currently very Debian-centric. If the demand for support on other operating systems arises, this can be remedied.
 
-To get started, run `scripts/collect_example_csaf_docs.sh`. This downloads and stores some CSAF-related tools, before downloading a lot of CSAF documents with label TLP:WHITE. From these, it generates (or rather fakes) some CSAF documents with other TLP labels.
+To get started, run `scripts/setup.sh`. This generates a fake TLS certificate for the server, and then downloads and stores some CSAF-related tools, before downloading a lot of CSAF documents with label TLP:WHITE. From these, it generates (or rather fakes) some CSAF documents with other TLP labels.
 
 The heart of the project is the Flask server coded in `fake_csaf_server.py`. It can be started and stopped using `scripts/run.sh` and `scripts/stop.sh`. The scripts are merely there for convenience, the server can easily be run directly using a Python interpreter.
 
@@ -20,7 +20,7 @@ By default, the server offers almost no endpoints. The most straightforward way 
 ```
 scripts/configure.sh --well-known-meta --rolie-feed
 ```
-The server then offers its metadata via the path `/.well-known/csaf/provider-metadata.json`, and serves the CSAF documents in `csafs/some/white` in a ROLIE feed.
+The server then offers its metadata via the path `/.well-known/csaf/provider-metadata.json`, and serves the CSAF documents via a ROLIE feed that is specified in the metadata.
 
 The endpoints can be verfieid by adding the `--verify` flag to the configure script:
 ```
