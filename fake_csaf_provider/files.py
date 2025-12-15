@@ -45,6 +45,8 @@ def csaf_file_exists(tlp, year, filename):
 
 def send_csaf(tlp, year, filename):
     path = _csaf_dir / tlp / year / filename
+    if not path.is_file():
+        flask.abort(404, description="CSAF file not found")
     return flask.send_file(str(path), mimetype='application/json')
 
 
