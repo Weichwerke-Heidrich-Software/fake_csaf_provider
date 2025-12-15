@@ -1,7 +1,7 @@
 import flask
 
 from .consts import rolie_feed_path_white, rolie_feed_csaf_dir_white
-from .files import csaf_file_exists, find_white_advisory_files
+from .files import csaf_file_exists, find_white_advisory_files, read_csaf_id
 from .state import get_current_release_date, get_latest_release_date
 from .util import domain, now
 
@@ -37,7 +37,7 @@ def rolie_feed():
         updated_str = date.replace(microsecond=0).isoformat()
       else:
         updated_str = now()
-      id = file[:-5] if file.endswith('.json') else file
+      id = read_csaf_id(year, file)
       entry = {
           "id": f"{id}",
           "title": f"{id}",

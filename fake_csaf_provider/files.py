@@ -69,3 +69,11 @@ def collect_current_release_dates() -> dict[(str, str), datetime.datetime]:
         except ValueError:
             continue
     return dates
+
+
+def read_csaf_id(year: str, file: str) -> str:
+    path = _csaf_dir / 'white' / year / file
+    with path.open('r', encoding='utf-8') as f:
+        csaf = f.read()
+    csaf_json = json.loads(csaf)
+    return csaf_json.get("document", {}).get("tracking", {}).get("id", "")
