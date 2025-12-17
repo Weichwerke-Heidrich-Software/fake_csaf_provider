@@ -21,6 +21,9 @@ root_security_txt=0
 directory_listing=0
 # Offer a ROLIE feed for CSAF documents
 rolie_feed=0
+# Set a rate limit
+rate_limit_requests=0
+rate_limit_period_seconds=0
 # Verify the configuration after applying it
 verify=0
 
@@ -59,6 +62,15 @@ while [[ $# -gt 0 ]]; do
             rolie_feed=1
             shift
             ;;
+        --rate-limit)
+            if [[ $# -lt 3 ]]; then
+                echo "Error: --rate-limit requires two arguments: <requests> <period_seconds>"
+                exit 1
+            fi
+            rate_limit_requests="$2"
+            rate_limit_period_seconds="$3"
+            shift 3
+            ;;
         --all)
             well_known_meta=1
             security_data_meta=1
@@ -96,21 +108,28 @@ payload=$(cat <<JSON
     "well_known_security_txt": $(to_bool "$well_known_security_txt"),
     "root_security_txt": $(to_bool "$root_security_txt"),
     "directory_listing": $(to_bool "$directory_listing"),
-    "rolie_feed": $(to_bool "$rolie_feed")
+    "rolie_feed": $(to_bool "$rolie_feed"),
+    "rate_limit_requests": $rate_limit_requests,
+    "rate_limit_period_seconds": $rate_limit_period_seconds
 }
 JSON
 )
 
-# Send PATCH request to configure the fake CSAF server
-curl -X PATCH \
-    -H "Content-Type: application/json" \
-    -d "$payload" \
-    --cacert "${CERT_PATH}" \
-    "${SERVER}/config"
+function configure_server() {   
+    curl -X PATCH \
+        -H "Content-Type: application/json" \
+        -d "$payload" \
+        --cacert "${CERT_PATH}" \
+        "${SERVER}/config"
+}
+
+configure_server
 
 if [ "$verify" -eq 0 ]; then
     exit 0
 fi
+
+echo "=== Verifying server configuration ==="
 
 function expect_url() {
     local path="$1"
@@ -126,6 +145,33 @@ function expect_url() {
     fi
 }
 
+function test_rate_limit() {
+    if (( rate_limit_requests > 0 )); then
+        if (( rate_limit_period_seconds <= 0 )); then
+            echo "Rate limit period seconds must be greater than 0 when rate limiting is enabled."
+            return 1
+        fi
+        local code=0
+        local url="${SERVER}/obscure/path/to/provider-metadata.json"
+        for i in $(seq 1 $((rate_limit_requests + 1))); do
+            local code=$(curl --cacert "${CERT_PATH}" -o /dev/null -s -w "%{http_code}" "${url}")
+        done
+        if [ "$code" -ne 429 ]; then
+            echo "Expected HTTP status code 429 for rate limiting, but got $code"
+            return 1
+        fi
+        headers=$(curl --cacert "${CERT_PATH}" -s -D - -o /dev/null "${url}")
+        expected_headers=("X-RateLimit-Limit" "X-RateLimit-Remaining" "X-RateLimit-Reset" "Retry-After")
+        for header in "${expected_headers[@]}"; do
+            if ! echo "$headers" | grep -i "$header:" > /dev/null; then
+                echo "Expected header $header not found in response."
+                return 1
+            fi
+        done
+        echo "Rate limiting test passed."
+    fi
+}
+
 # Verify the server configuration
 expect_url "/.well-known/csaf/provider-metadata.json" "$well_known_meta"
 expect_url "/security/data/csaf/provider-metadata.json" "$security_data_meta"
@@ -136,3 +182,7 @@ expect_url "/security.txt" "$root_security_txt"
 expect_url "/some-csaf-base-path/index.txt" "$directory_listing"
 expect_url "/some-csaf-base-path/changes.csv" "$directory_listing"
 expect_url "/some-white-rolie-dir/some-feed.json" "$rolie_feed"
+
+test_rate_limit
+
+configure_server # Reconfiguring resets rate limit counters

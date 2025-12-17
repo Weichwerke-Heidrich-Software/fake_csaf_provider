@@ -5,11 +5,43 @@ from .dirlisting import changes_csv, index_txt
 from .files import send_csaf
 from .metadata import provider_metadata
 from .rolie import rolie_feed
-from .state import configure, offer_if_enabled
+from .state import configure, offer_if_enabled, rate_limit_headers, get_retry_after_seconds, log_request
 from .util import security_txt_content
 
 
 app = flask.Flask(__name__)
+
+
+@app.before_request
+def enforce_rate_limit():
+    if flask.request.path == '/config':
+        return None
+
+    client = flask.request.headers.get('X-Forwarded-For', None)
+    if client:
+        client = client.split(',')[0].strip()
+    else:
+        client = flask.request.remote_addr or 'unknown'
+
+    log_request(client)
+    headers = rate_limit_headers(client)
+    flask.g.rate_limit_headers = headers # Stored for after_request
+    is_allowed = int(headers.get('X-RateLimit-Remaining', 100)) > 0
+    if not is_allowed:
+        retry_after = str(get_retry_after_seconds())
+        resp = flask.jsonify({"error": "Too Many Requests"})
+        resp.status_code = 429
+        resp.headers['Retry-After'] = retry_after
+        return resp
+
+
+@app.after_request
+def attach_rate_limit_headers(response):
+    headers = getattr(flask.g, "rate_limit_headers", None)
+    if headers:
+        for k, v in headers.items():
+            response.headers[k] = str(v)
+    return response
 
 
 @app.route('/config', methods=['PATCH'])
