@@ -183,6 +183,6 @@ expect_url "/some-csaf-base-path/index.txt" "$directory_listing"
 expect_url "/some-csaf-base-path/changes.csv" "$directory_listing"
 expect_url "/some-white-rolie-dir/some-feed.json" "$rolie_feed"
 
-configure_server # Reconfiguring resets rate limit counters
 test_rate_limit
-configure_server
+
+configure_server # Reconfiguring resets rate limit counters
