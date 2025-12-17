@@ -99,14 +99,22 @@ def get_latest_release_date() -> datetime.datetime | None:
         return max(dates.values())
 
 
-def is_request_allowed(remote_addr: str) -> bool:
+def log_request(remote_addr: str):
+    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    with _rate_limit_lock:
+        timestamps = _rate_limit_store.setdefault(remote_addr, [])
+        timestamps.append(now)
+
+
+def rate_limit_headers(remote_addr: str) -> dict[str, str]:
     with _state_lock:
         limit = int(_state.get('rate_limit_requests', 0))
         period = int(_state.get('rate_limit_period_seconds', 0))
     enabled = limit > 0 and period > 0
 
+    headers = {}
     if not enabled:
-        return True
+        return headers
 
     now = datetime.datetime.now(datetime.timezone.utc).timestamp()
     cutoff = now - period
@@ -115,10 +123,15 @@ def is_request_allowed(remote_addr: str) -> bool:
         timestamps = _rate_limit_store.setdefault(remote_addr, [])
         while timestamps and timestamps[0] < cutoff:
             timestamps.pop(0)
-        if len(timestamps) >= limit:
-            return False
-        timestamps.append(now)
-        return True
+        remaining = max(0, limit - len(timestamps))
+        headers['X-RateLimit-Limit'] = str(limit)
+        headers['X-RateLimit-Remaining'] = str(remaining)
+        if timestamps:
+            reset_time = timestamps[0] + period
+            headers['X-RateLimit-Reset'] = str(int(reset_time))
+        else:
+            headers['X-RateLimit-Reset'] = str(int(now + period))
+    return headers
 
 
 def get_retry_after_seconds() -> int:

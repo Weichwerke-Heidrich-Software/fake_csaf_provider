@@ -160,6 +160,13 @@ function test_rate_limit() {
             echo "Expected HTTP status code 429 for rate limiting, but got $code"
             return 1
         fi
+        headers=$(curl --cacert "${CERT_PATH}" -s -D - -o /dev/null "${url}")
+        echo "$headers"
+        retry_after=$(echo "$headers" | grep -i "Retry-After:" | awk '{print $2}' | tr -d '\r')
+        if ! [[ "$retry_after" =~ ^[0-9]+$ ]]; then
+            echo "Expected a numeric Retry-After header, but got: $retry_after"
+            return 1
+        fi
         echo "Rate limiting test passed."
     fi
 }
