@@ -12,6 +12,8 @@ _state = {
     "security_txt": False,
     "directory_listing": False,
     "rolie_feed": False,
+    "rate_limit_requests": 0,
+    "rate_limit_period_seconds": 0,
 }
 _state_lock = threading.Lock()
 
@@ -20,6 +22,8 @@ _cache = {
 }
 _cache_lock = threading.Lock()
 
+_rate_limit_store: dict[str, list[float]] = {}
+_rate_limit_lock = threading.Lock()
 
 def set_state(json: dict):
     with _state_lock:
@@ -31,7 +35,11 @@ def set_state(json: dict):
         _state['root_security_txt'] = json.get('root_security_txt', False)
         _state['directory_listing'] = json.get('directory_listing', False)
         _state['rolie_feed'] = json.get('rolie_feed', False)
+        _state['rate_limit_requests'] = json.get('rate_limit_requests', 0)
+        _state['rate_limit_period_seconds'] = json.get('rate_limit_period_seconds', 0)
 
+    with _rate_limit_lock:
+        _rate_limit_store.clear()
 
 def get_config(key: str):
     with _state_lock:
@@ -89,3 +97,32 @@ def get_latest_release_date() -> datetime.datetime | None:
         if not dates:
             return None
         return max(dates.values())
+
+
+def is_request_allowed(remote_addr: str) -> bool:
+    with _state_lock:
+        limit = int(_state.get('rate_limit_requests', 0))
+        period = int(_state.get('rate_limit_period_seconds', 0))
+    enabled = limit > 0 and period > 0
+
+    if not enabled:
+        return True
+
+    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    cutoff = now - period
+
+    with _rate_limit_lock:
+        timestamps = _rate_limit_store.setdefault(remote_addr, [])
+        while timestamps and timestamps[0] < cutoff:
+            timestamps.pop(0)
+        if len(timestamps) >= limit:
+            return False
+        timestamps.append(now)
+        return True
+
+
+def get_retry_after_seconds() -> int:
+    with _state_lock:
+        period = int(_state.get('rate_limit_period_seconds', 0))
+    return period
+
