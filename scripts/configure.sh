@@ -161,12 +161,13 @@ function test_rate_limit() {
             return 1
         fi
         headers=$(curl --cacert "${CERT_PATH}" -s -D - -o /dev/null "${url}")
-        echo "$headers"
-        retry_after=$(echo "$headers" | grep -i "Retry-After:" | awk '{print $2}' | tr -d '\r')
-        if ! [[ "$retry_after" =~ ^[0-9]+$ ]]; then
-            echo "Expected a numeric Retry-After header, but got: $retry_after"
-            return 1
-        fi
+        expected_headers=("X-RateLimit-Limit" "X-RateLimit-Remaining" "X-RateLimit-Reset" "Retry-After")
+        for header in "${expected_headers[@]}"; do
+            if ! echo "$headers" | grep -i "$header:" > /dev/null; then
+                echo "Expected header $header not found in response."
+                return 1
+            fi
+        done
         echo "Rate limiting test passed."
     fi
 }
