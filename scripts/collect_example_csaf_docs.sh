@@ -7,17 +7,15 @@ loads_dirname=$dirname/loads
 some_dirname=$dirname/some
 
 cd "$(git rev-parse --show-toplevel)"
-mkdir -p $dirname
-mkdir -p $loads_dirname
 
-./scripts/ensure_csaf_tools.sh
+./scripts/ensure_bomnipotent.sh
 
 number_of_files=$(find "$loads_dirname" -type f -name "*.json" | wc -l)
 echo "Currently storing $number_of_files CSAF documents in $loads_dirname."
 if [ $number_of_files -lt 10 ]; then
     echo "Downloading CSAF documents to $loads_dirname."
     echo "NOTE: This will take some time on the order of 15 minutes."
-    ./csaf_downloader -d $loads_dirname https://cert-bund.de/.well-known/csaf/provider-metadata.json
+    ./bomnipotent_client --domain https://wid.cert-bund.de --log-level debug csaf download "$loads_dirname"
 fi
 
 echo "Copying some CSAF documents to $some_dirname."
