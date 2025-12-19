@@ -14,8 +14,8 @@ number_of_files=$(find "$loads_dirname" -type f -name "*.json" | wc -l)
 echo "Currently storing $number_of_files CSAF documents in $loads_dirname."
 if [ $number_of_files -lt 10 ]; then
     echo "Downloading CSAF documents to $loads_dirname."
-    echo "NOTE: This will take some time on the order of 15 minutes."
-    ./bomnipotent_client --domain https://wid.cert-bund.de --log-level debug csaf download "$loads_dirname"
+    echo "NOTE: This will take some time, possibly more than an hour."
+    time ./bomnipotent_client --domain https://wid.cert-bund.de csaf download "$loads_dirname"
 fi
 
 echo "Copying some CSAF documents to $some_dirname."
