@@ -208,6 +208,5 @@ __marimo__/
 
 # Project-specific ignores
 csafs/
-csaf_checker
-csaf_downloader
+bomnipotent_client
 crypto/
