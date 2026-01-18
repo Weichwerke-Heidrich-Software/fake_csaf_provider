@@ -2,10 +2,10 @@ import flask
 
 from .consts import directory_listing_base_path, rolie_feed_path_white
 from .state import get_config
-from .util import domain, now
+from .util import domain_print, now
 
 def provider_metadata():
-    canonical_url = f"https://{domain}/obscure/path/to/provider-metadata.json"
+    canonical_url = f"https://{domain_print}/obscure/path/to/provider-metadata.json"
     metadata = {
         "canonical_url": canonical_url,
         "distributions": [],
@@ -18,14 +18,14 @@ def provider_metadata():
             "contact_details": "Contact.",
             "issuing_authority": "Test.",
             "name": "Test-Vendor",
-            "namespace": f"https://{domain}"
+            "namespace": f"https://{domain_print}"
         },
         "role": "csaf_provider"
     }
     offer_dirlisting = get_config('directory_listing')
     if offer_dirlisting:
         dirlisting = {
-            "directory_url": f"https://{domain}/{directory_listing_base_path}/"
+            "directory_url": f"https://{domain_print}/{directory_listing_base_path}/"
         }
         metadata["distributions"].append(dirlisting)
     offer_rolie = get_config('rolie_feed')
@@ -36,7 +36,7 @@ def provider_metadata():
                 {
                     "summary": "WHITE advisories",
                     "tlp_label": "WHITE",
-                    "url": f"https://{domain}/{rolie_feed_path_white}"
+                    "url": f"https://{domain_print}/{rolie_feed_path_white}"
                 }
             ]
         }
