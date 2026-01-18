@@ -14,6 +14,7 @@ from __future__ import annotations
 import datetime
 import ipaddress
 from pathlib import Path
+import argparse
 from typing import Iterable, List
 
 from cryptography import x509
@@ -23,12 +24,12 @@ from cryptography.hazmat.primitives.serialization import BestAvailableEncryption
 from cryptography.x509.oid import NameOID
 
 
-OUTDIR = Path("./crypto")
-DAYS = 365
+DEFAULT_OUTDIR = Path("./crypto")
+DEFAULT_DAYS = 365
 KEY_SIZE = 2048
-COMMON_NAME = "localhost"
-SAN = ["localhost", "127.0.0.1", "::1"]
-CA_NAME = "Fake Local CA"
+DEFAULT_COMMON_NAME = "localhost"
+DEFAULT_SAN = ["localhost", "127.0.0.1", "::1"]
+CA_NAME = "Fake CA"
 
 
 def make_rsa_key(key_size: int = 2048) -> rsa.RSAPrivateKey:
@@ -109,8 +110,25 @@ def build_server_cert(
     return cert
 
 
-def main() -> None:
-    outdir: Path = OUTDIR
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Generate a test CA and a localhost TLS certificate.")
+    parser.add_argument(
+        "common_name",
+        nargs="?",
+        default=DEFAULT_COMMON_NAME,
+        help=f"Server certificate common name (default: {DEFAULT_COMMON_NAME})",
+    )
+    parser.add_argument("-d", "--days", type=int, default=DEFAULT_DAYS, help=f"Certificate validity days (default: {DEFAULT_DAYS})")
+    parser.add_argument(
+        "-o",
+        "--outdir",
+        default=str(DEFAULT_OUTDIR),
+        help=f"Output directory (default: {DEFAULT_OUTDIR})",
+    )
+
+    args = parser.parse_args(argv)
+
+    outdir: Path = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
     files = {
@@ -121,13 +139,14 @@ def main() -> None:
         "server_pem": outdir / "server.pem",
     }
 
-    # generate keys
     ca_key = make_rsa_key(KEY_SIZE)
-    server_key = make_rsa_key(KEY_SIZE)
+    ca_cert = build_ca(ca_key, CA_NAME, args.days)
 
-    # build certs
-    ca_cert = build_ca(ca_key, CA_NAME, DAYS)
-    server_cert = build_server_cert(server_key, ca_key, ca_cert, COMMON_NAME, SAN, DAYS)
+    server_key = make_rsa_key(KEY_SIZE)
+    sans = DEFAULT_SAN
+    if args.common_name not in sans:
+        sans = [args.common_name]
+    server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
 
     # write files
     write_key(files["ca_key"], ca_key)
