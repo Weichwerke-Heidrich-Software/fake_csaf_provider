@@ -110,6 +110,41 @@ def build_server_cert(
     return cert
 
 
+def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path, days: int) -> tuple[rsa.RSAPrivateKey, x509.Certificate]:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if ca_key_path.exists() and ca_cert_path.exists():
+        try:
+            key_data = ca_key_path.read_bytes()
+            key = serialization.load_pem_private_key(key_data, password=None)
+            cert_data = ca_cert_path.read_bytes()
+            cert = x509.load_pem_x509_certificate(cert_data)
+            # cryptography historically returned naive datetimes; prefer the
+            # timezone-aware `_utc` properties when available, otherwise
+            # attach UTC tzinfo for safe comparison with `now`.
+            not_before = getattr(cert, "not_valid_before_utc", cert.not_valid_before)
+            not_after = getattr(cert, "not_valid_after_utc", cert.not_valid_after)
+            if not_before.tzinfo is None:
+                not_before = not_before.replace(tzinfo=datetime.timezone.utc)
+            if not_after.tzinfo is None:
+                not_after = not_after.replace(tzinfo=datetime.timezone.utc)
+
+            if not_before <= now <= not_after:
+                print(f"Found existing CA certificate at {ca_cert_path}; reusing.")
+                return key, cert
+            else:
+                print(f"Existing CA certificate at {ca_cert_path} is expired or not yet valid; regenerating.")
+        except Exception as e:
+            print(f"Failed to load existing CA files: {e}; regenerating.")
+
+    # build and persist a new CA
+    print(f"Generating new CA certificate at {ca_cert_path}.")
+    key = make_rsa_key(KEY_SIZE)
+    cert = build_ca(key, CA_NAME, days)
+    write_key(ca_key_path, key)
+    write_cert(ca_cert_path, cert)
+    return key, cert
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Generate a test CA and a localhost TLS certificate.")
     parser.add_argument(
@@ -139,8 +174,7 @@ def main(argv: list[str] | None = None) -> None:
         "server_pem": outdir / "server.pem",
     }
 
-    ca_key = make_rsa_key(KEY_SIZE)
-    ca_cert = build_ca(ca_key, CA_NAME, args.days)
+    ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"], args.days)
 
     server_key = make_rsa_key(KEY_SIZE)
     sans = DEFAULT_SAN
@@ -148,9 +182,7 @@ def main(argv: list[str] | None = None) -> None:
         sans = [args.common_name]
     server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
 
-    # write files
-    write_key(files["ca_key"], ca_key)
-    write_cert(files["ca_cert"], ca_cert)
+    # write server files
     write_key(files["server_key"], server_key)
     write_cert(files["server_cert"], server_cert)
 
