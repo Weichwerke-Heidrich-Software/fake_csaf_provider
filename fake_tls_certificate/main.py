@@ -171,12 +171,6 @@ def main(argv: list[str] | None = None) -> None:
         default=str(DEFAULT_OUTDIR),
         help=f"Output directory (default: {DEFAULT_OUTDIR})",
     )
-    parser.add_argument(
-        "-n",
-        "--name",
-        default="server",
-        help="Base name for server key/cert files (default: server)",
-    )
 
     args = parser.parse_args(argv)
 
@@ -186,9 +180,9 @@ def main(argv: list[str] | None = None) -> None:
     files = {
         "ca_key": outdir / "ca.key.pem",
         "ca_cert": outdir / "ca.crt.pem",
-        "server_key": outdir / f"{args.name}.key.pem",
-        "server_cert": outdir / f"{args.name}.crt.pem",
-        "server_pem": outdir / f"{args.name}.chain.pem",
+        "server_key": outdir / f"{args.common_name}.key.pem",
+        "server_cert": outdir / f"{args.common_name}.crt.pem",
+        "server_pem": outdir / f"{args.common_name}.chain.pem",
     }
 
     ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"])
