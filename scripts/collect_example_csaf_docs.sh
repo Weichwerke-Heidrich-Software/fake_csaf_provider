@@ -3,31 +3,29 @@
 set -e
 
 dirname=csafs
-loads_dirname=$dirname/loads
-some_dirname=$dirname/some
+dirname_all=csafs_all
 
 cd "$(git rev-parse --show-toplevel)"
 
 ./scripts/ensure_bomnipotent.sh
 
-number_of_files=$(find "$loads_dirname" -type f -name "*.json" | wc -l)
-echo "Currently storing $number_of_files CSAF documents in $loads_dirname."
+number_of_files=$(find "$dirname_all" -type f -name "*.json" | wc -l)
+echo "Currently storing $number_of_files CSAF documents in $dirname_all."
 if [ $number_of_files -lt 10 ]; then
-    echo "Downloading CSAF documents to $loads_dirname."
+    echo "Downloading CSAF documents to $dirname_all."
     echo "NOTE: This will take some time, possibly more than an hour."
-    ./bomnipotent_client --domain https://wid.cert-bund.de csaf download "$loads_dirname"
+    ./bomnipotent_client --domain https://wid.cert-bund.de csaf download "$dirname_all"
 fi
 
-echo "Copying some CSAF documents to $some_dirname."
-rm -rf $some_dirname
-mkdir $some_dirname
+echo "Copying some CSAF documents to $dirname."
+mkdir -p $dirname
 
-year_dirs=$(ls "$loads_dirname/white/" | grep -E '^[0-9]{4}$')
+year_dirs=$(ls "$dirname_all/white/" | grep -E '^[0-9]{4}$')
 for year in $year_dirs; do
-    mkdir -p $some_dirname/white
-    target_dir=$some_dirname/white/$year
+    mkdir -p $dirname/white
+    target_dir=$dirname/white/$year
     mkdir -p $target_dir
-    first_csaf=$(find "$loads_dirname/white/$year" -type f -name "*.json" | head -n 1)
+    first_csaf=$(find "$dirname_all/white/$year" -type f -name "*.json" | head -n 1)
     first_signature="${first_csaf}.asc"
     first_sha256="${first_csaf}.sha256"
     first_sha512="${first_csaf}.sha512"
@@ -48,12 +46,12 @@ function fake_docs() {
     TLP=$(echo "$Tlp" | tr '[:lower:]' '[:upper:]')
     tlp=$(echo "$Tlp" | tr '[:upper:]' '[:lower:]')
 
-    white_csafs=$(find $some_dirname/white -type f -name "*.json")
-    year_dirs=$(ls "$some_dirname/white/")
+    white_csafs=$(find $dirname/white -type f -name "*.json")
+    year_dirs=$(ls "$dirname/white/")
     echo "Faking some $TLP CSAF documents"
-    mkdir -p "$some_dirname/$tlp"
+    mkdir -p "$dirname/$tlp"
     for year in $year_dirs; do
-        mkdir -p $some_dirname/$tlp/$year
+        mkdir -p $dirname/$tlp/$year
     done
     for file in $white_csafs; do
         new_path=$(echo $file | sed "s/white/$tlp/" | sed "s/.json/-$tlp.json/")

@@ -5,7 +5,7 @@ Produces:
 - ca.crt.pem (CA certificate)
 - server.key.pem (private key for the server)
 - server.crt.pem (server certificate signed by the CA)
-- server.pem (optional concatenation of server key + cert)
+- server.chain.pem (concatenation of server key + cert)
 """
 
 
@@ -14,21 +14,24 @@ from __future__ import annotations
 import datetime
 import ipaddress
 from pathlib import Path
+import argparse
 from typing import Iterable, List
+import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, NoEncryption
 from cryptography.x509.oid import NameOID
+from cryptography.utils import CryptographyDeprecationWarning
 
 
-OUTDIR = Path("./crypto")
-DAYS = 365
+DEFAULT_OUTDIR = Path("./crypto")
+DEFAULT_DAYS = 365
 KEY_SIZE = 2048
-COMMON_NAME = "localhost"
-SAN = ["localhost", "127.0.0.1", "::1"]
-CA_NAME = "Fake Local CA"
+DEFAULT_COMMON_NAME = "localhost"
+DEFAULT_SAN = ["localhost", "127.0.0.1", "::1"]
+CA_NAME = "Fake CA"
 
 
 def make_rsa_key(key_size: int = 2048) -> rsa.RSAPrivateKey:
@@ -109,29 +112,88 @@ def build_server_cert(
     return cert
 
 
-def main() -> None:
-    outdir: Path = OUTDIR
+def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path) -> tuple[rsa.RSAPrivateKey, x509.Certificate]:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if ca_key_path.exists() and ca_cert_path.exists():
+        try:
+            key_data = ca_key_path.read_bytes()
+            key = serialization.load_pem_private_key(key_data, password=None)
+            cert_data = ca_cert_path.read_bytes()
+            cert = x509.load_pem_x509_certificate(cert_data)
+            # Prefer the timezone-aware `_utc` properties when available.
+            # Only access the deprecated naive properties inside a
+            # localized warning-suppression block to avoid global noise.
+            if hasattr(cert, "not_valid_before_utc") and hasattr(cert, "not_valid_after_utc"):
+                not_before = cert.not_valid_before_utc
+                not_after = cert.not_valid_after_utc
+            else:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+                    nb = cert.not_valid_before
+                    na = cert.not_valid_after
+                not_before = nb
+                not_after = na
+
+            if not_before.tzinfo is None:
+                not_before = not_before.replace(tzinfo=datetime.timezone.utc)
+            if not_after.tzinfo is None:
+                not_after = not_after.replace(tzinfo=datetime.timezone.utc)
+
+            if not_before <= now <= not_after:
+                print(f"Found existing CA certificate at {ca_cert_path}. It will be reused.")
+                return key, cert
+            else:
+                print(f"Existing CA certificate at {ca_cert_path} is expired or not yet valid. It will be regenerated.")
+        except Exception as e:
+            print(f"Failed to load existing CA files: {e}. They will be regenerated.")
+
+    # build and persist a new CA
+    print(f"Generating new CA certificate at {ca_cert_path}.")
+    key = make_rsa_key(KEY_SIZE)
+    cert = build_ca(key, CA_NAME, 1000)
+    write_key(ca_key_path, key)
+    write_cert(ca_cert_path, cert)
+    return key, cert
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Generate a test CA and a localhost TLS certificate.")
+    parser.add_argument(
+        "common_name",
+        nargs="?",
+        default=DEFAULT_COMMON_NAME,
+        help=f"Server certificate common name (default: {DEFAULT_COMMON_NAME})",
+    )
+    parser.add_argument("-d", "--days", type=int, default=DEFAULT_DAYS, help=f"Certificate validity days (default: {DEFAULT_DAYS})")
+    parser.add_argument(
+        "-o",
+        "--outdir",
+        default=str(DEFAULT_OUTDIR),
+        help=f"Output directory (default: {DEFAULT_OUTDIR})",
+    )
+
+    args = parser.parse_args(argv)
+
+    outdir: Path = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
     files = {
         "ca_key": outdir / "ca.key.pem",
         "ca_cert": outdir / "ca.crt.pem",
-        "server_key": outdir / "server.key.pem",
-        "server_cert": outdir / "server.crt.pem",
-        "server_pem": outdir / "server.pem",
+        "server_key": outdir / f"{args.common_name}.key.pem",
+        "server_cert": outdir / f"{args.common_name}.crt.pem",
+        "server_pem": outdir / f"{args.common_name}.chain.pem",
     }
 
-    # generate keys
-    ca_key = make_rsa_key(KEY_SIZE)
+    ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"])
+
     server_key = make_rsa_key(KEY_SIZE)
+    sans = DEFAULT_SAN
+    if args.common_name not in sans:
+        sans = [args.common_name]
+    server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
 
-    # build certs
-    ca_cert = build_ca(ca_key, CA_NAME, DAYS)
-    server_cert = build_server_cert(server_key, ca_key, ca_cert, COMMON_NAME, SAN, DAYS)
-
-    # write files
-    write_key(files["ca_key"], ca_key)
-    write_cert(files["ca_cert"], ca_cert)
+    # write server files
     write_key(files["server_key"], server_key)
     write_cert(files["server_cert"], server_cert)
 

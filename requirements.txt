@@ -9,5 +9,5 @@ Jinja2==3.1.6
 MarkupSafe==3.0.3
 pycparser==2.23
 pytz==2025.2
-Werkzeug==3.1.4
-zope.interface==8.1.1
+Werkzeug==3.1.5
+zope.interface==8.2

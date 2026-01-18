@@ -6,11 +6,11 @@ from pathlib import Path
 
 def find_csaf_dir():
     current_dir = Path(__file__).resolve().parent
-    csaf_dir = current_dir / 'csafs' / 'some'
+    csaf_dir = current_dir / 'csafs'
     if not csaf_dir.is_dir():
-        csaf_dir = current_dir.parent / 'csafs' / 'some'
+        csaf_dir = current_dir.parent / 'csafs'
     if not csaf_dir.is_dir():
-        raise FileNotFoundError("Could not find 'csafs/some' directory")
+        raise FileNotFoundError("Could not find 'csafs' directory")
     print(f"Using CSAF directory: {csaf_dir}")
     return csaf_dir
 
