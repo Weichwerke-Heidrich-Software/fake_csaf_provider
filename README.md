@@ -34,6 +34,9 @@ Because the container is agnostic to how you incorporate it into your environmen
 docker run --rm -d --name fake_csaf_test -p 34443:34443 -v ./crypto:/app/crypto:ro -v ./csafs:/app/csafs:ro fake_csaf_provider
 ```
 
+> [!IMPORTANT]
+> The CSAF documents in the `csafs` folder need to follow the directory structure `csafs/<tlp>/<year>/id.json`. The script `collect_example_csaf_docs.sh` will create this structure for you.
+
 If you use the container inside a Docker network, its domain will in general not be `localhost`. A different domain requires a different TLS certificate. You can create a fake one by calling:
 ``` sh
 python3 -m fake_tls_certificate <some-domain> --days 30 --outdir ./crypto_other
@@ -61,11 +64,17 @@ As an example, here is a minimal `docker-compose.yml` that starts a `fake_csaf_p
 
 ```yaml
 services:
+    # This service name ensures that the "mycsaf" domain resolves to this container
+    # inside the docker network.
 	mycsaf:
 		image: fake_csaf_provider
 		container_name: fake_csaf_mycsaf
 		environment:
+            # This ensure that the correct TLS certificate is used,
+            # and that the security.txt points to the correct domain.
 			FAKE_CSAF_DOMAIN: "mycsaf"
+            # Inside the container, the service should bind to the canonical
+            # port for HTTPS communication.
             FAKE_CSAF_PORT: 443
 		volumes:
 			- ./crypto:/app/crypto:ro

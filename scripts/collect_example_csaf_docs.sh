@@ -3,8 +3,8 @@
 set -e
 
 dirname=csafs
-loads_dirname=$dirname/loads
-some_dirname=$dirname/some
+loads_dirname=$dirname/all
+some_dirname=$dirname
 
 cd "$(git rev-parse --show-toplevel)"
 
