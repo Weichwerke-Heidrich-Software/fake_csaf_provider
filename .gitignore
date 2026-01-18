@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Project-specific ignores
+csafs_all/
 csafs/
 bomnipotent_client
 crypto/
