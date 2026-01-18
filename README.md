@@ -19,7 +19,7 @@ To get started, run `scripts/setup.sh`. This generates a fake TLS certificate fo
 
 The heart of the project is the Flask server coded in `fake_csaf_provider/`. It can be started and stopped using `scripts/run.sh` and `scripts/stop.sh`. The scripts are merely there for convenience, the server can easily be run directly using a Python interpreter.
 
-By default, the server runs on `localhost:34443`. You can specify the environment variables `FAKE_CSAF_DOMAIN` and `FAKE_CSAF_PORT` to adjust this behaviour.
+By default, the server runs on `localhost:34443`. You can specify the environment variables `FAKE_CSAF_DOMAIN` and `FAKE_CSAF_PORT` to adjust this behaviour. If you set the domain to anything other than "localhost", the server will bind to "0.0.0.0" instead of the loopback address.
 
 ### Running within Docker
 
@@ -39,7 +39,7 @@ docker run --rm -d --name fake_csaf_test -p 34443:34443 -v ./crypto:/app/crypto:
 
 If you use the container inside a Docker network, its domain will in general not be `localhost`. A different domain requires a different TLS certificate. You can create a fake one by calling:
 ``` sh
-python3 -m fake_tls_certificate <some-domain> --days 30 --outdir ./crypto_other
+python3 -m fake_tls_certificate.main <some-domain> --days 30 --outdir ./crypto_other
 ```
 
 This will create a fake certificate with a validity of 30 days and store it to `./crypto_other/<some-domain>.crt.pem`. The arguments are optional: The output directory defaults to `./crypto`, the number of days defaults to 365, and the domain defaults to `localhost`.
@@ -51,7 +51,7 @@ This will create a fake certificate with a validity of 30 days and store it to `
 
 Testing to access several separate servers is most easily achieved via several docker containers. Since these will (inside the Docker network) be reachable under different domains, they require different TLS certificates to authenticate to the client. These can be generated via:
 ``` sh
-python3 -m fake_tls_certificate <some-domain>
+python3 -m fake_tls_certificate.main <some-domain>
 ```
 For example, using "mycsaf" as the domain name will create the files `./crypto/mycsaf.crt.pem`, `./crypto/mycsaf.key.pem` and `./crypto/mycsaf.chain.pem`.
 
@@ -63,25 +63,30 @@ In order to tell the server which certificate to use, you can set the `FAKE_CSAF
 As an example, here is a minimal `docker-compose.yml` that starts a `fake_csaf_provider` service using the custom domain "mycsaf":
 
 ```yaml
+networks:
+  docker_network:
+    driver: bridge
 services:
     # This service name ensures that the "mycsaf" domain resolves to this container
     # inside the docker network.
-	mycsaf:
-		image: fake_csaf_provider
-		container_name: fake_csaf_mycsaf
-		environment:
+    mycsaf:
+        image: fake_csaf_provider
+        container_name: fake_csaf_mycsaf
+        environment:
             # This ensure that the correct TLS certificate is used,
             # and that the security.txt points to the correct domain.
-			FAKE_CSAF_DOMAIN: "mycsaf"
+            FAKE_CSAF_DOMAIN: "mycsaf"
             # Inside the container, the service should bind to the canonical
             # port for HTTPS communication.
             FAKE_CSAF_PORT: 443
-		volumes:
-			- ./crypto:/app/crypto:ro
-			- ./csafs:/app/csafs:ro
+        volumes:
+            - ./crypto:/app/crypto:ro
+            - ./csafs:/app/csafs:ro
+        networks:
+            - docker_network
 ```
 
-Add other services ad libitum.
+Add other services to the same network ad libitum.
 
 ### Confguration
 
