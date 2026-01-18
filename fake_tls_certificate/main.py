@@ -16,12 +16,14 @@ import ipaddress
 from pathlib import Path
 import argparse
 from typing import Iterable, List
+import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, NoEncryption
 from cryptography.x509.oid import NameOID
+from cryptography.utils import CryptographyDeprecationWarning
 
 
 DEFAULT_OUTDIR = Path("./crypto")
@@ -118,23 +120,32 @@ def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path, days: int) -> tuple[
             key = serialization.load_pem_private_key(key_data, password=None)
             cert_data = ca_cert_path.read_bytes()
             cert = x509.load_pem_x509_certificate(cert_data)
-            # cryptography historically returned naive datetimes; prefer the
-            # timezone-aware `_utc` properties when available, otherwise
-            # attach UTC tzinfo for safe comparison with `now`.
-            not_before = getattr(cert, "not_valid_before_utc", cert.not_valid_before)
-            not_after = getattr(cert, "not_valid_after_utc", cert.not_valid_after)
+            # Prefer the timezone-aware `_utc` properties when available.
+            # Only access the deprecated naive properties inside a
+            # localized warning-suppression block to avoid global noise.
+            if hasattr(cert, "not_valid_before_utc") and hasattr(cert, "not_valid_after_utc"):
+                not_before = cert.not_valid_before_utc
+                not_after = cert.not_valid_after_utc
+            else:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+                    nb = cert.not_valid_before
+                    na = cert.not_valid_after
+                not_before = nb
+                not_after = na
+
             if not_before.tzinfo is None:
                 not_before = not_before.replace(tzinfo=datetime.timezone.utc)
             if not_after.tzinfo is None:
                 not_after = not_after.replace(tzinfo=datetime.timezone.utc)
 
             if not_before <= now <= not_after:
-                print(f"Found existing CA certificate at {ca_cert_path}; reusing.")
+                print(f"Found existing CA certificate at {ca_cert_path}. It will be reused.")
                 return key, cert
             else:
-                print(f"Existing CA certificate at {ca_cert_path} is expired or not yet valid; regenerating.")
+                print(f"Existing CA certificate at {ca_cert_path} is expired or not yet valid. It will be regenerated.")
         except Exception as e:
-            print(f"Failed to load existing CA files: {e}; regenerating.")
+            print(f"Failed to load existing CA files: {e}. They will be regenerated.")
 
     # build and persist a new CA
     print(f"Generating new CA certificate at {ca_cert_path}.")
