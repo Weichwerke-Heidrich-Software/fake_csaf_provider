@@ -2,6 +2,7 @@
 A simple, dynamically configurable, fake CSAF provider server used for testing.
 """
 
+import os
 import pathlib
 
 from .consts import port
@@ -12,8 +13,10 @@ from .state import initialize_current_release_dates
 initialize_current_release_dates()
 
 project_root = pathlib.Path(__file__).resolve().parents[1]
-cert_path = project_root / "crypto" / "server.crt.pem"
-key_path = project_root / "crypto" / "server.key.pem"
+# Read TLS certificate basename from environment variable, default to "server"
+basename = os.environ.get("SERVER_CERT_BASENAME", "server")
+cert_path = project_root / "crypto" / f"{basename}.crt.pem"
+key_path = project_root / "crypto" / f"{basename}.key.pem"
 
 if __name__ == '__main__':
     if not cert_path.exists() or not key_path.exists():

@@ -5,7 +5,7 @@ Produces:
 - ca.crt.pem (CA certificate)
 - server.key.pem (private key for the server)
 - server.crt.pem (server certificate signed by the CA)
-- server.pem (optional concatenation of server key + cert)
+- server.chain.pem (concatenation of server key + cert)
 """
 
 
@@ -112,7 +112,7 @@ def build_server_cert(
     return cert
 
 
-def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path, days: int) -> tuple[rsa.RSAPrivateKey, x509.Certificate]:
+def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path) -> tuple[rsa.RSAPrivateKey, x509.Certificate]:
     now = datetime.datetime.now(datetime.timezone.utc)
     if ca_key_path.exists() and ca_cert_path.exists():
         try:
@@ -150,7 +150,7 @@ def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path, days: int) -> tuple[
     # build and persist a new CA
     print(f"Generating new CA certificate at {ca_cert_path}.")
     key = make_rsa_key(KEY_SIZE)
-    cert = build_ca(key, CA_NAME, days)
+    cert = build_ca(key, CA_NAME, 1000)
     write_key(ca_key_path, key)
     write_cert(ca_cert_path, cert)
     return key, cert
@@ -171,6 +171,12 @@ def main(argv: list[str] | None = None) -> None:
         default=str(DEFAULT_OUTDIR),
         help=f"Output directory (default: {DEFAULT_OUTDIR})",
     )
+    parser.add_argument(
+        "-n",
+        "--name",
+        default="server",
+        help="Base name for server key/cert files (default: server)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -180,12 +186,12 @@ def main(argv: list[str] | None = None) -> None:
     files = {
         "ca_key": outdir / "ca.key.pem",
         "ca_cert": outdir / "ca.crt.pem",
-        "server_key": outdir / "server.key.pem",
-        "server_cert": outdir / "server.crt.pem",
-        "server_pem": outdir / "server.pem",
+        "server_key": outdir / f"{args.name}.key.pem",
+        "server_cert": outdir / f"{args.name}.crt.pem",
+        "server_pem": outdir / f"{args.name}.chain.pem",
     }
 
-    ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"], args.days)
+    ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"])
 
     server_key = make_rsa_key(KEY_SIZE)
     sans = DEFAULT_SAN

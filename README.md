@@ -44,6 +44,19 @@ This will create a fake certificate with a validity of 30 days and store it to `
 > [!IMPORTANT]
 > The fake certificate is of course signed by a fake certificate authority. Its certificate is found in the output folder under `ca.crt.pem`. The client needs to accept this fake certificate as valid, otherwise it will refuse to connect to the server.
 
+### Running servers in parallel
+
+Testing to access several separate servers is most easily achieved via several docker containers. Since these will (inside the Docker network) be reachable under different domains, they require different TLS certificates to authenticate to the client. These can be generated via:
+``` sh
+python3 -m fake_tls_certificate <some-domain> --name <some-domain>
+```
+The optional name argument refers to the base name used when storing the certificates in the output directory. For example, using "mycsaf" as the domain name will create the files `./crypto/mycsaf.crt.pem`, `./crypto/mycsaf.key.pem` and `./crypto/mycsaf.chain.pem`.
+
+> [!NOTE]
+> Repeated calls to the script will only generate the certificate authority once, and reuse it in subsequent calls. This ensures that you only need to add a single CA to the client.
+
+In order to tell the server which certificate to use, you can set the `SERVER_CERT_BASENAME` environment variable. If not set, its value will default to "server".
+
 ### Confguration
 
 The core design idea is that the server listens to PATCH requests on the path `/config`. The JSON payload should resemble the desired server configuration. The script `scripts/configure.sh` does exactly that. It can be provided with optional arguments to each feature flag that you want to enable.
