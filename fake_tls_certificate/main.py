@@ -190,7 +190,7 @@ def main(argv: list[str] | None = None) -> None:
     server_key = make_rsa_key(KEY_SIZE)
     sans = DEFAULT_SAN
     if args.common_name not in sans:
-        sans = [args.common_name]
+        sans += [args.common_name]
     server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
 
     # write server files
