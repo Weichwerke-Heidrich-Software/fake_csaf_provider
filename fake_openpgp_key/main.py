@@ -98,16 +98,26 @@ def load_or_generate_keypair(
     if private_key_path.exists() and public_key_path.exists():
         try:
             # Try to read existing keys
-            private_key = private_key_path.read_text()
-            public_key = public_key_path.read_text()
+            private_key_text = private_key_path.read_text()
+            public_key_text = public_key_path.read_text()
             
-            # Verify they are valid by checking for PGP headers
-            if "-----BEGIN PGP PRIVATE KEY BLOCK-----" in private_key and \
-               "-----BEGIN PGP PUBLIC KEY BLOCK-----" in public_key:
+            # Verify they are valid by signing a test message and verifying it
+            private_key_obj, _ = pgpy.PGPKey.from_blob(private_key_text)
+            public_key_obj, _ = pgpy.PGPKey.from_blob(public_key_text)
+            
+            # Create a test message and sign it with the private key
+            test_message = "test message for key validation"
+            signature = private_key_obj.sign(test_message)
+            
+            # Verify the signature with the public key
+            verification = public_key_obj.verify(test_message, signature)
+            if verification:
                 print(f"Found existing OpenPGP key pair at {private_key_path}. It will be reused.")
-                return private_key, public_key
+                return private_key_text, public_key_text
+            else:
+                print(f"Existing key pair signature verification failed. A new one will be generated.")
         except Exception as e:
-            print(f"Failed to load existing OpenPGP key pair: {e}. A new one will be generated.")
+            print(f"Failed to load existing OpenPGP key pair: {e}.\nA new key pair will be generated.")
     
     # Generate new key pair
     print(f"Generating new OpenPGP key pair (ED25519) at {private_key_path}.")
