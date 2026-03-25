@@ -2,7 +2,7 @@ import flask
 
 from .consts import rolie_feed_path_white, rolie_feed_csaf_dir_white
 from .files import csaf_file_exists, find_white_advisory_files, read_csaf_id
-from .state import get_current_release_date, get_latest_release_date
+from .state import get_current_release_date, get_latest_release_date, get_config
 from .util import domain_print, now
 
 def rolie_feed():
@@ -58,7 +58,7 @@ def rolie_feed():
             "version": "2.0"
           }
         }
-      if csaf_file_exists("white", year, f"{file}.asc"):
+      if get_config('openpgp'):
           entry["link"].append({
               "rel": "signature",
               "href": f"https://{domain_print}{rolie_feed_csaf_dir_white}/{year}/{file}.asc"
