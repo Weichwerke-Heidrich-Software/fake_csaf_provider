@@ -1,6 +1,7 @@
 import datetime
 import flask
 import json
+import pgpy
 from pathlib import Path
 
 
@@ -43,7 +44,45 @@ def csaf_file_exists(tlp, year, filename):
     return path.is_file()
 
 
+def _load_private_key():
+    project_root = Path(__file__).resolve().parents[1]
+    key_path = project_root / "crypto" / "openpgp.key.asc"
+    
+    if not key_path.exists():
+        raise FileNotFoundError(f"Private key not found at {key_path}")
+    
+    key_text = key_path.read_text()
+    private_key, _ = pgpy.PGPKey.from_blob(key_text)
+    return private_key
+
+
+def _create_signature(json_path: Path) -> str:
+    if not json_path.exists():
+        raise FileNotFoundError(f"JSON file not found at {json_path}")
+    
+    private_key = _load_private_key()
+    json_content = json_path.read_text()
+    signature = private_key.sign(json_content)
+    return str(signature)
+
+
 def send_csaf(tlp, year, filename):
+    if filename.endswith('.asc'):
+        # Remove the .asc extension to get the JSON filename
+        json_filename = filename[:-4]
+        json_path = _csaf_dir / tlp / year / json_filename
+        
+        if not json_path.is_file():
+            flask.abort(404, description="CSAF file not found")
+        
+        try:
+            signature = _create_signature(json_path)
+            response = flask.Response(signature, mimetype='application/pgp-signature')
+            return response
+        except Exception as e:
+            flask.abort(500, description=f"Failed to create signature: {str(e)}")
+    
+    # Handle regular JSON file requests
     path = _csaf_dir / tlp / year / filename
     if not path.is_file():
         flask.abort(404, description="CSAF file not found")

@@ -1,4 +1,5 @@
 import flask
+import pathlib
 
 from .consts import directory_listing_base_path, rolie_feed_csaf_dir_white, rolie_feed_path_white
 from .dirlisting import changes_csv, index_txt
@@ -107,3 +108,14 @@ def rolie_feed_endpoint():
 @app.route(f'{rolie_feed_csaf_dir_white}/<string:year>/<string:filename>', methods=['GET'])
 def rolie_feed_csaf(year, filename):
     return send_csaf("white", year, filename)
+
+
+@app.route('/.well-known/openpgpkey.asc', methods=['GET'])
+def openpgp_key():
+    project_root = pathlib.Path(__file__).resolve().parents[1]
+    key_path = project_root / "crypto" / "openpgp.pub.asc"
+    
+    if not key_path.exists():
+        flask.abort(404, description="OpenPGP public key not found")
+    
+    return offer_if_enabled('openpgp', flask.send_file(str(key_path), mimetype='application/pgp-keys'))

@@ -145,7 +145,7 @@ def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path) -> tuple[rsa.RSAPriv
             else:
                 print(f"Existing CA certificate at {ca_cert_path} is expired or not yet valid. It will be regenerated.")
         except Exception as e:
-            print(f"Failed to load existing CA files: {e}. They will be regenerated.")
+            print(f"Failed to load existing CA files: {e}.\nNew CA files will be regenerated.")
 
     # build and persist a new CA
     print(f"Generating new CA certificate at {ca_cert_path}.")

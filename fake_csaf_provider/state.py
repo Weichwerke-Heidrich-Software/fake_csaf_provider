@@ -12,6 +12,7 @@ _state = {
     "security_txt": False,
     "directory_listing": False,
     "rolie_feed": False,
+    "openpgp": False,
     "rate_limit_requests": 0,
     "rate_limit_period_seconds": 0,
 }
@@ -35,6 +36,7 @@ def set_state(json: dict):
         _state['root_security_txt'] = json.get('root_security_txt', False)
         _state['directory_listing'] = json.get('directory_listing', False)
         _state['rolie_feed'] = json.get('rolie_feed', False)
+        _state['openpgp'] = json.get('openpgp', False)
         _state['rate_limit_requests'] = json.get('rate_limit_requests', 0)
         _state['rate_limit_period_seconds'] = json.get('rate_limit_period_seconds', 0)
 

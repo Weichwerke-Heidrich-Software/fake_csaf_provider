@@ -21,6 +21,8 @@ root_security_txt=0
 directory_listing=0
 # Offer a ROLIE feed for CSAF documents
 rolie_feed=0
+# Offer OpenPGP public key via /.well-known/openpgpkey.asc (advertised in security.txt)
+openpgp=0
 # Set a rate limit
 rate_limit_requests=0
 rate_limit_period_seconds=0
@@ -62,6 +64,10 @@ while [[ $# -gt 0 ]]; do
             rolie_feed=1
             shift
             ;;
+        --openpgp)
+            openpgp=1
+            shift
+            ;;
         --rate-limit)
             if [[ $# -lt 3 ]]; then
                 echo "Error: --rate-limit requires two arguments: <requests> <period_seconds>"
@@ -81,6 +87,7 @@ while [[ $# -gt 0 ]]; do
             dns_path=1
             directory_listing=1
             rolie_feed=1
+            openpgp=1
             shift
             ;;
         --verify)
@@ -109,6 +116,7 @@ payload=$(cat <<JSON
     "root_security_txt": $(to_bool "$root_security_txt"),
     "directory_listing": $(to_bool "$directory_listing"),
     "rolie_feed": $(to_bool "$rolie_feed"),
+    "openpgp": $(to_bool "$openpgp"),
     "rate_limit_requests": $rate_limit_requests,
     "rate_limit_period_seconds": $rate_limit_period_seconds
 }
@@ -182,6 +190,7 @@ expect_url "/security.txt" "$root_security_txt"
 expect_url "/some-csaf-base-path/index.txt" "$directory_listing"
 expect_url "/some-csaf-base-path/changes.csv" "$directory_listing"
 expect_url "/some-white-rolie-dir/some-feed.json" "$rolie_feed"
+expect_url "/.well-known/openpgpkey.asc" "$openpgp"
 
 test_rate_limit
 
