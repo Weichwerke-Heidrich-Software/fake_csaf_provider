@@ -1,16 +1,25 @@
 import flask
 import pathlib
 
-from .consts import directory_listing_base_path, rolie_feed_csaf_dir_white, rolie_feed_path_white
+from .auth import get_client_identity, require_client_cert
+from .consts import directory_listing_base_path, rolie_feed_path, rolie_feed_csaf_dir
 from .dirlisting import changes_csv, index_txt
 from .files import send_csaf
 from .metadata import provider_metadata
-from .rolie import rolie_feed
+from .rolie import rolie_feed, rolie_feed
 from .state import configure, offer_if_enabled, rate_limit_headers, get_retry_after_seconds, log_request
 from .util import security_txt_content
 
 
 app = flask.Flask(__name__)
+
+
+@app.before_request
+def extract_client_identity():
+    """Extract and validate client certificate before processing request."""
+    flask.g.client_identity = get_client_identity()
+    if flask.g.client_identity:
+        print(f"Authenticated client: {flask.g.client_identity.get('common_name')}")
 
 
 @app.before_request
@@ -100,14 +109,84 @@ def dir_listing_csaf(year, filename):
     return send_csaf("white", year, filename)
 
 
-@app.route(rolie_feed_path_white, methods=['GET'])
+@app.route(rolie_feed_path('white'), methods=['GET'])
 def rolie_feed_endpoint():
-    return offer_if_enabled('rolie_feed', rolie_feed())
+    return offer_if_enabled('rolie_feed', rolie_feed('white'))
 
 
-@app.route(f'{rolie_feed_csaf_dir_white}/<string:year>/<string:filename>', methods=['GET'])
+@app.route(rolie_feed_path('clear'), methods=['GET'])
+def rolie_feed_clear():
+    return offer_if_enabled('rolie_feed', rolie_feed('clear'))
+
+
+@app.route(rolie_feed_path('green'), methods=['GET'])
+@require_client_cert
+def rolie_feed_green():
+    return offer_if_enabled('rolie_feed', rolie_feed('green'))
+
+
+@app.route(rolie_feed_path('amber'), methods=['GET'])
+@require_client_cert
+def rolie_feed_amber():
+    return offer_if_enabled('rolie_feed', rolie_feed('amber'))
+
+
+@app.route(rolie_feed_path('amber-strict'), methods=['GET'])
+@require_client_cert
+def rolie_feed_amber_strict():
+    return offer_if_enabled('rolie_feed', rolie_feed('amber+strict'))
+
+
+@app.route(rolie_feed_path('red'), methods=['GET'])
+@require_client_cert
+def rolie_feed_red():
+    return offer_if_enabled('rolie_feed', rolie_feed('red'))
+
+
+@app.route(rolie_feed_path('unlabeled'), methods=['GET'])
+@require_client_cert
+def rolie_feed_unlabeled():
+    return offer_if_enabled('rolie_feed', rolie_feed('unlabeled'))
+
+
+@app.route(f'{rolie_feed_csaf_dir('white')}/<string:year>/<string:filename>', methods=['GET'])
 def rolie_feed_csaf(year, filename):
     return send_csaf("white", year, filename)
+
+
+@app.route(f'{rolie_feed_csaf_dir("clear")}/<string:year>/<string:filename>', methods=['GET'])
+def rolie_feed_csaf_clear(year, filename):
+    return send_csaf("clear", year, filename)
+
+
+@app.route(f'{rolie_feed_csaf_dir("green")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def rolie_feed_csaf_green(year, filename):
+    return send_csaf("green", year, filename)
+
+
+@app.route(f'{rolie_feed_csaf_dir("amber")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def rolie_feed_csaf_amber(year, filename):
+    return send_csaf("amber", year, filename)
+
+
+@app.route(f'{rolie_feed_csaf_dir("amber-strict")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def rolie_feed_csaf_amber_strict(year, filename):
+    return send_csaf("amber+strict", year, filename)
+
+
+@app.route(f'{rolie_feed_csaf_dir("red")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def rolie_feed_csaf_red(year, filename):
+    return send_csaf("red", year, filename)
+
+
+@app.route(f'{rolie_feed_csaf_dir("unlabeled")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def rolie_feed_csaf_unlabeled(year, filename):
+    return send_csaf("unlabeled", year, filename)
 
 
 @app.route('/.well-known/openpgpkey.asc', methods=['GET'])

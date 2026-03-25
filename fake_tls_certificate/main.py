@@ -112,6 +112,47 @@ def build_server_cert(
     return cert
 
 
+def build_client_cert(
+    client_key: rsa.RSAPrivateKey,
+    ca_key: rsa.RSAPrivateKey,
+    ca_cert: x509.Certificate,
+    common_name: str,
+    days: int,
+) -> x509.Certificate:
+    """Build a client certificate for mutual TLS authentication.
+    
+    Args:
+        client_key: The client's private key
+        ca_key: The CA's private key for signing
+        ca_cert: The CA certificate
+        common_name: The CN for the client certificate
+        days: Validity period in days
+        
+    Returns:
+        The signed client certificate
+    """
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(ca_cert.subject)
+        .public_key(client_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(days=1))
+        .not_valid_after(now + datetime.timedelta(days=days))
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .add_extension(
+            x509.ExtendedKeyUsage([x509.oid.ExtendedKeyUsageOID.CLIENT_AUTH]),
+            critical=True
+        )
+    )
+
+    cert = builder.sign(private_key=ca_key, algorithm=hashes.SHA256())
+    return cert
+
+
 def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path) -> tuple[rsa.RSAPrivateKey, x509.Certificate]:
     now = datetime.datetime.now(datetime.timezone.utc)
     if ca_key_path.exists() and ca_cert_path.exists():
@@ -171,6 +212,11 @@ def main(argv: list[str] | None = None) -> None:
         default=str(DEFAULT_OUTDIR),
         help=f"Output directory (default: {DEFAULT_OUTDIR})",
     )
+    parser.add_argument(
+        "--client-cert",
+        metavar="NAME",
+        help="Generate a client certificate with the given name (stored in outdir/clients/)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -180,30 +226,57 @@ def main(argv: list[str] | None = None) -> None:
     files = {
         "ca_key": outdir / "ca.key.pem",
         "ca_cert": outdir / "ca.crt.pem",
-        "server_key": outdir / f"{args.common_name}.key.pem",
-        "server_cert": outdir / f"{args.common_name}.crt.pem",
-        "server_pem": outdir / f"{args.common_name}.chain.pem",
     }
 
     ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"])
 
-    server_key = make_rsa_key(KEY_SIZE)
-    sans = DEFAULT_SAN
-    if args.common_name not in sans:
-        sans += [args.common_name]
-    server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
+    if args.client_cert:
+        # Generate client certificate
+        clients_dir = outdir / "clients"
+        clients_dir.mkdir(parents=True, exist_ok=True)
+        
+        client_key = make_rsa_key(KEY_SIZE)
+        client_cert = build_client_cert(client_key, ca_key, ca_cert, args.client_cert, args.days)
+        
+        client_files = {
+            "client_key": clients_dir / f"{args.client_cert}.key.pem",
+            "client_cert": clients_dir / f"{args.client_cert}.crt.pem",
+            "client_pem": clients_dir / f"{args.client_cert}.chain.pem",
+        }
+        
+        write_key(client_files["client_key"], client_key)
+        write_cert(client_files["client_cert"], client_cert)
+        
+        # combined client pem (key + cert)
+        client_pem_data = client_files["client_key"].read_bytes() + b"\n" + client_files["client_cert"].read_bytes()
+        client_files["client_pem"].write_bytes(client_pem_data)
+        
+        print("Wrote client certificate:")
+        for k, p in client_files.items():
+            print(f" - {p}")
+    else:
+        # Generate server certificate
+        files["server_key"] = outdir / f"{args.common_name}.key.pem"
+        files["server_cert"] = outdir / f"{args.common_name}.crt.pem"
+        files["server_pem"] = outdir / f"{args.common_name}.chain.pem"
+        
+        server_key = make_rsa_key(KEY_SIZE)
+        sans = DEFAULT_SAN
+        if args.common_name not in sans:
+            sans += [args.common_name]
+        server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
 
-    # write server files
-    write_key(files["server_key"], server_key)
-    write_cert(files["server_cert"], server_cert)
+        # write server files
+        write_key(files["server_key"], server_key)
+        write_cert(files["server_cert"], server_cert)
 
-    # combined server pem (key + cert)
-    server_pem_data = files["server_key"].read_bytes() + b"\n" + files["server_cert"].read_bytes()
-    files["server_pem"].write_bytes(server_pem_data)
+        # combined server pem (key + cert)
+        server_pem_data = files["server_key"].read_bytes() + b"\n" + files["server_cert"].read_bytes()
+        files["server_pem"].write_bytes(server_pem_data)
 
-    print("Wrote:")
-    for k, p in files.items():
-        print(f" - {p}")
+        print("Wrote:")
+        for k, p in files.items():
+            print(f" - {p}")
 
 
 if __name__ == "__main__":

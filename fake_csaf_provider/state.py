@@ -70,7 +70,7 @@ def offer_if_enabled(feature_name, return_value):
 
 
 def initialize_current_release_dates():
-    dates = collect_current_release_dates()
+    dates = collect_current_release_dates('white')
     with _cache_lock:
         _cache['current_release_dates'] = dates
 

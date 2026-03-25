@@ -1,6 +1,7 @@
 import flask
 
-from .consts import directory_listing_base_path, rolie_feed_path_white
+from .consts import directory_listing_base_path, rolie_feed_path
+from .files import get_available_tlp_levels
 from .state import get_config
 from .util import domain_print, now
 
@@ -28,18 +29,28 @@ def provider_metadata():
             "directory_url": f"https://{domain_print}/{directory_listing_base_path}/"
         }
         metadata["distributions"].append(dirlisting)
+    
     offer_rolie = get_config('rolie_feed')
     if offer_rolie:
-        rolie = {
-        "rolie": {
-            "feeds": [
-                {
-                    "summary": "WHITE advisories",
-                    "tlp_label": "WHITE",
-                    "url": f"https://{domain_print}/{rolie_feed_path_white}"
+        # Build list of all available TLP feeds
+        feeds = []
+        available_tlps = get_available_tlp_levels()
+        
+        for tlp in available_tlps:
+            tlp_display = tlp.upper().replace('+', ':')
+            feed_path = rolie_feed_path(tlp)
+            feeds.append({
+                "summary": f"{tlp_display} advisories",
+                "tlp_label": tlp_display,
+                "url": f"https://{domain_print}{feed_path}"
+            })
+        
+        if feeds:
+            rolie = {
+                "rolie": {
+                    "feeds": feeds
                 }
-            ]
-        }
-        }
-        metadata["distributions"].append(rolie)
+            }
+            metadata["distributions"].append(rolie)
+    
     return flask.jsonify(metadata)

@@ -88,7 +88,55 @@ services:
 
 Add other services to the same network ad libitum.
 
-### Confguration
+### Client Certificate Authentication
+
+The server supports mutual TLS (mTLS) authentication using client certificates. This allows serving non-white TLP content (AMBER, GREEN, RED, etc.) to authenticated clients only.
+
+#### Generating Client Certificates
+
+The setup script automatically generates a demo client certificate. To create additional client certificates:
+
+```sh
+python3 -m fake_tls_certificate.main --client-cert <client-name>
+```
+
+This creates:
+- `crypto/clients/<client-name>.crt.pem` - Client certificate
+- `crypto/clients/<client-name>.key.pem` - Client private key
+- `crypto/clients/<client-name>.chain.pem` - Combined certificate and key
+
+All client certificates are signed by the same CA (`crypto/ca.crt.pem`) that signs the server certificate.
+
+#### Using Client Certificates
+
+To access protected TLP content, provide the client certificate and key when making requests:
+
+```sh
+curl --cacert crypto/ca.crt.pem \
+     --cert crypto/clients/demo-client.crt.pem \
+     --key crypto/clients/demo-client.key.pem \
+     https://localhost:34443/some-amber-csaf-dir-for-rolie/2024/advisory.json
+```
+
+#### Testing Client Authentication
+
+Run the test script to verify client certificate authentication is working:
+
+```sh
+./scripts/test_client_auth.sh
+```
+
+This script tests:
+- Public access to TLP:WHITE content
+- Protected access to non-white TLP content
+- Certificate validation
+- ROLIE feed access for different TLP levels
+
+#### Provider Metadata
+
+When ROLIE feeds are enabled, the provider metadata automatically advertises all available TLP levels. Clients with valid certificates can discover and access feeds for all TLP levels present in the `csafs/` directory.
+
+### Configuration
 
 The core design idea is that the server listens to PATCH requests on the path `/config`. The JSON payload should resemble the desired server configuration. The script `scripts/configure.sh` does exactly that. It can be provided with optional arguments to each feature flag that you want to enable.
 
