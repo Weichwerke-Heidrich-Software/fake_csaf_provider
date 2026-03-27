@@ -19,7 +19,7 @@ _state = {
 _state_lock = threading.Lock()
 
 _cache = {
-    "current_release_dates": None,
+    "current_release_dates": {},
 }
 _cache_lock = threading.Lock()
 
@@ -70,35 +70,42 @@ def offer_if_enabled(feature_name, return_value):
 
 
 def initialize_current_release_dates():
-    dates = collect_current_release_dates()
+    """Initialize release dates cache for all TLP levels."""
+    from .files import get_available_tlp_levels
+    
     with _cache_lock:
-        _cache['current_release_dates'] = dates
+        for tlp in get_available_tlp_levels():
+            dates = collect_current_release_dates(tlp)
+            _cache['current_release_dates'][tlp] = dates
 
 
-def get_current_release_date(year: str, filename: str) -> datetime.datetime | None:
+def get_current_release_date(year: str, filename: str, tlp: str) -> datetime.datetime | None:
+    """Get the release date for a specific file in a TLP level."""
     with _cache_lock:
-        dates = _cache['current_release_dates']
-        if not dates:
+        tlp_dates = _cache['current_release_dates'].get(tlp, {})
+        if not tlp_dates:
             return None
-        return dates.get((year, filename))
+        return tlp_dates.get((year, filename))
 
 
-def get_sorted_release_dates() -> dict[(str, str), datetime.datetime]:
+def get_sorted_release_dates(tlp: str) -> dict[(str, str), datetime.datetime]:
+    """Get sorted release dates for a specific TLP level."""
     sorted_dates = {}
     with _cache_lock:
-        dates = _cache['current_release_dates']
-        if not dates:
+        tlp_dates = _cache['current_release_dates'].get(tlp, {})
+        if not tlp_dates:
             return sorted_dates
-        sorted_list = sorted(dates.items(), key=lambda item: item[1], reverse=True)
+        sorted_list = sorted(tlp_dates.items(), key=lambda item: item[1], reverse=True)
         return sorted_list
 
 
-def get_latest_release_date() -> datetime.datetime | None:
+def get_latest_release_date(tlp: str) -> datetime.datetime | None:
+    """Get the latest release date for a specific TLP level."""
     with _cache_lock:
-        dates = _cache['current_release_dates']
-        if not dates:
+        tlp_dates = _cache['current_release_dates'].get(tlp, {})
+        if not tlp_dates:
             return None
-        return max(dates.values())
+        return max(tlp_dates.values())
 
 
 def log_request(remote_addr: str):

@@ -2,6 +2,7 @@ import datetime
 import flask
 import json
 import pgpy
+
 from pathlib import Path
 
 
@@ -19,24 +20,39 @@ def find_csaf_dir():
 _csaf_dir = find_csaf_dir()
 
 
-def find_white_year_dirs():
-    path = _csaf_dir / 'white'
+def find_year_dirs(tlp):
+    """Find year directories for a given TLP level."""
+    path = _csaf_dir / tlp
     dirs = []
+    if not path.is_dir():
+        return dirs
     for entry in path.iterdir():
         if entry.is_dir() and entry.name.isdigit():
             dirs.append(entry.name)
     return dirs
 
 
-def find_white_advisory_files():
-    path = _csaf_dir / 'white'
+def find_advisory_files(tlp):
+    """Find advisory files for a given TLP level."""
+    path = _csaf_dir / tlp
     files = []
-    for year in find_white_year_dirs():
+    if not path.is_dir():
+        return files
+    for year in find_year_dirs(tlp):
         year_path = path / year
         for entry in year_path.iterdir():
             if entry.is_file() and entry.name.endswith('.json'):
                 files.append((year, entry.name))
     return files
+
+
+def get_available_tlp_levels():
+    """Return list of TLP directories that exist in the csafs directory."""
+    levels = []
+    for tlp in ['white', 'clear', 'green', 'amber', 'amber+strict', 'red', 'unlabeled']:
+        if (_csaf_dir / tlp).is_dir():
+            levels.append(tlp)
+    return levels
 
 
 def csaf_file_exists(tlp, year, filename):
@@ -100,10 +116,11 @@ def read_current_release_date(path: str) -> datetime.datetime:
         raise ValueError("current_release_date not found in JSON") from err
 
 
-def collect_current_release_dates() -> dict[(str, str), datetime.datetime]:
+def collect_current_release_dates(tlp) -> dict[(str, str), datetime.datetime]:
+    """Collect release dates for advisories of a given TLP level."""
     dates = {}
-    for year, filename in find_white_advisory_files():
-        path = _csaf_dir / 'white' / year / filename
+    for year, filename in find_advisory_files(tlp):
+        path = _csaf_dir / tlp / year / filename
         try:
             date = read_current_release_date(path)
             dates[(year, filename)] = date
@@ -112,8 +129,9 @@ def collect_current_release_dates() -> dict[(str, str), datetime.datetime]:
     return dates
 
 
-def read_csaf_id(year: str, file: str) -> str:
-    path = _csaf_dir / 'white' / year / file
+def read_csaf_id(year: str, file: str, tlp) -> str:
+    """Read the CSAF ID from a document."""
+    path = _csaf_dir / tlp / year / file
     with path.open('r', encoding='utf-8') as f:
         csaf = f.read()
     csaf_json = json.loads(csaf)

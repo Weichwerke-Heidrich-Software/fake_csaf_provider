@@ -1,5 +1,7 @@
 import datetime
 import os
+
+from .auth import is_client_authenticated
 from .state import get_config
 
 domain = os.environ.get("FAKE_CSAF_DOMAIN", "localhost")
@@ -41,3 +43,22 @@ CSAF: https://{domain_print}/obscure/path/to/provider-metadata.json
 {openpgp_line}
 Expires: {expires}
 """
+
+
+def get_accessible_tlp_levels(available_tlps: list[str]) -> list[str]:
+    """
+    Filter TLP levels based on client authentication status.
+    
+    Returns only 'white' and 'clear' TLP levels for unauthenticated clients.
+    Returns all available TLP levels for authenticated clients.
+    
+    Args:
+        available_tlps: List of all available TLP levels
+        
+    Returns:
+        List of TLP levels accessible to the current client
+    """
+    if is_client_authenticated():
+        return available_tlps
+    else:
+        return [tlp for tlp in available_tlps if tlp in ('white', 'clear')]

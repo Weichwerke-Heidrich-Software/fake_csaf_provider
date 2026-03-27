@@ -1,24 +1,30 @@
 import flask
 
-from .consts import rolie_feed_path_white, rolie_feed_csaf_dir_white
-from .files import csaf_file_exists, find_white_advisory_files, read_csaf_id
+from .files import csaf_file_exists, find_advisory_files, read_csaf_id
+from .paths import rolie_feed_path, rolie_feed_csaf_dir
 from .state import get_current_release_date, get_latest_release_date, get_config
 from .util import domain_print, now
 
-def rolie_feed():
-    updated = get_latest_release_date()
+def rolie_feed(tlp):
+    """Generate a ROLIE feed for a specific TLP level."""
+    feed_path = rolie_feed_path(tlp)
+    csaf_dir = rolie_feed_csaf_dir(tlp)
+    
+    updated = get_latest_release_date(tlp)
     if updated:
         updated_str = updated.replace(microsecond=0).isoformat()
     else:
         updated_str = now()
+    
+    tlp_display = tlp.upper()
     rolie = {
       "feed": {
-        "id": "csaf-feed-tlp-white",
-        "title": "CSAF feed (TLP:WHITE)",
+        "id": f"csaf-feed-tlp-{tlp}",
+        "title": f"CSAF feed (TLP:{tlp_display})",
         "link": [
           {
             "rel": "self",
-            "href": f"https://{domain_print}/{rolie_feed_path_white}"
+            "href": f"https://{domain_print}{feed_path}"
           }
         ],
         "category": [
@@ -31,27 +37,28 @@ def rolie_feed():
         "entry": []
       }
     }
-    for year, file in find_white_advisory_files():
-      date = get_current_release_date(year, file)
+    
+    for year, file in find_advisory_files(tlp):
+      date = get_current_release_date(year, file, tlp)
       if date:
         updated_str = date.replace(microsecond=0).isoformat()
       else:
         updated_str = now()
-      id = read_csaf_id(year, file)
+      id = read_csaf_id(year, file, tlp)
       entry = {
           "id": f"{id}",
           "title": f"{id}",
           "link": [
             {
               "rel": "self",
-              "href": f"https://{domain_print}{rolie_feed_csaf_dir_white}/{year}/{file}"
+              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}"
             }
           ],
           "published": updated_str, # This is not technically correct, but irrelevant for our purposes.
           "updated": updated_str,
           "content": {
             "type": "application/json",
-            "src": f"https://{domain_print}{rolie_feed_csaf_dir_white}/{year}/{file}"
+            "src": f"https://{domain_print}{csaf_dir}/{year}/{file}"
           },
           "format": {
             "schema": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
@@ -61,17 +68,17 @@ def rolie_feed():
       if get_config('openpgp'):
           entry["link"].append({
               "rel": "signature",
-              "href": f"https://{domain_print}{rolie_feed_csaf_dir_white}/{year}/{file}.asc"
+              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.asc"
           })
-      if csaf_file_exists("white", year, f"{file}.sha256"):
+      if csaf_file_exists(tlp, year, f"{file}.sha256"):
           entry["link"].append({
               "rel": "hash",
-              "href": f"https://{domain_print}{rolie_feed_csaf_dir_white}/{year}/{file}.sha256"
+              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.sha256"
           })
-      if csaf_file_exists("white", year, f"{file}.sha512"):
+      if csaf_file_exists(tlp, year, f"{file}.sha512"):
           entry["link"].append({
               "rel": "hash",
-              "href": f"https://{domain_print}{rolie_feed_csaf_dir_white}/{year}/{file}.sha512"
+              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.sha512"
           })
       rolie['feed']['entry'].append(entry)
     return flask.jsonify(rolie)
