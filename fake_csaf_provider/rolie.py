@@ -10,7 +10,7 @@ def rolie_feed(tlp):
     feed_path = rolie_feed_path(tlp)
     csaf_dir = rolie_feed_csaf_dir(tlp)
     
-    updated = get_latest_release_date()
+    updated = get_latest_release_date(tlp)
     if updated:
         updated_str = updated.replace(microsecond=0).isoformat()
     else:
@@ -39,7 +39,7 @@ def rolie_feed(tlp):
     }
     
     for year, file in find_advisory_files(tlp):
-      date = get_current_release_date(year, file)
+      date = get_current_release_date(year, file, tlp)
       if date:
         updated_str = date.replace(microsecond=0).isoformat()
       else:

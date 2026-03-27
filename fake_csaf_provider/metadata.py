@@ -25,10 +25,11 @@ def provider_metadata():
     }
     offer_dirlisting = get_config('directory_listing')
     if offer_dirlisting:
-        dirlisting = {
-            "directory_url": f"https://{domain_print}/{directory_listing_base_path}/"
-        }
-        metadata["distributions"].append(dirlisting)
+        for tlp in get_available_tlp_levels():
+            dirlisting = {
+                "directory_url": f"https://{domain_print}/{directory_listing_base_path(tlp)}/"
+            }
+            metadata["distributions"].append(dirlisting)
     
     offer_rolie = get_config('rolie_feed')
     if offer_rolie:

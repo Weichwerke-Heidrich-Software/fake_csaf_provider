@@ -94,19 +94,124 @@ def root_security_txt():
     return offer_if_enabled('root_security_txt', security_txt_content('/security.txt'))
 
 
-@app.route(f'{directory_listing_base_path}/index.txt', methods=['GET'])
+@app.route(f'{directory_listing_base_path("white")}/index.txt', methods=['GET'])
 def directory_listing_index():
-    return offer_if_enabled('directory_listing', index_txt())
+    return offer_if_enabled('directory_listing', index_txt('white'))
 
 
-@app.route(f'{directory_listing_base_path}/changes.csv', methods=['GET'])
+@app.route(f'{directory_listing_base_path("white")}/changes.csv', methods=['GET'])
 def directory_listing_changes():
-    return offer_if_enabled('directory_listing', changes_csv())
+    return offer_if_enabled('directory_listing', changes_csv('white'))
 
 
-@app.route(f'{directory_listing_base_path}/<string:year>/<string:filename>', methods=['GET'])
+@app.route(f'{directory_listing_base_path("white")}/<string:year>/<string:filename>', methods=['GET'])
 def dir_listing_csaf(year, filename):
     return send_csaf("white", year, filename)
+
+
+@app.route(f'{directory_listing_base_path("clear")}/index.txt', methods=['GET'])
+def directory_listing_index_clear():
+    return offer_if_enabled('directory_listing', index_txt('clear'))
+
+
+@app.route(f'{directory_listing_base_path("clear")}/changes.csv', methods=['GET'])
+def directory_listing_changes_clear():
+    return offer_if_enabled('directory_listing', changes_csv('clear'))
+
+
+@app.route(f'{directory_listing_base_path("clear")}/<string:year>/<string:filename>', methods=['GET'])
+def dir_listing_csaf_clear(year, filename):
+    return send_csaf("clear", year, filename)
+
+
+@app.route(f'{directory_listing_base_path("green")}/index.txt', methods=['GET'])
+@require_client_cert
+def directory_listing_index_green():
+    return offer_if_enabled('directory_listing', index_txt('green'))
+
+
+@app.route(f'{directory_listing_base_path("green")}/changes.csv', methods=['GET'])
+@require_client_cert
+def directory_listing_changes_green():
+    return offer_if_enabled('directory_listing', changes_csv('green'))
+
+
+@app.route(f'{directory_listing_base_path("green")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def dir_listing_csaf_green(year, filename):
+    return send_csaf("green", year, filename)
+
+
+@app.route(f'{directory_listing_base_path("amber")}/index.txt', methods=['GET'])
+@require_client_cert
+def directory_listing_index_amber():
+    return offer_if_enabled('directory_listing', index_txt('amber'))
+
+
+@app.route(f'{directory_listing_base_path("amber")}/changes.csv', methods=['GET'])
+@require_client_cert
+def directory_listing_changes_amber():
+    return offer_if_enabled('directory_listing', changes_csv('amber'))
+
+
+@app.route(f'{directory_listing_base_path("amber")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def dir_listing_csaf_amber(year, filename):
+    return send_csaf("amber", year, filename)
+
+
+@app.route(f'{directory_listing_base_path("amber-strict")}/index.txt', methods=['GET'])
+@require_client_cert
+def directory_listing_index_amber_strict():
+    return offer_if_enabled('directory_listing', index_txt('amber+strict'))
+
+
+@app.route(f'{directory_listing_base_path("amber-strict")}/changes.csv', methods=['GET'])
+@require_client_cert
+def directory_listing_changes_amber_strict():
+    return offer_if_enabled('directory_listing', changes_csv('amber+strict'))
+
+
+@app.route(f'{directory_listing_base_path("amber-strict")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def dir_listing_csaf_amber_strict(year, filename):
+    return send_csaf("amber+strict", year, filename)
+
+
+@app.route(f'{directory_listing_base_path("red")}/index.txt', methods=['GET'])
+@require_client_cert
+def directory_listing_index_red():
+    return offer_if_enabled('directory_listing', index_txt('red'))
+
+
+@app.route(f'{directory_listing_base_path("red")}/changes.csv', methods=['GET'])
+@require_client_cert
+def directory_listing_changes_red():
+    return offer_if_enabled('directory_listing', changes_csv('red'))
+
+
+@app.route(f'{directory_listing_base_path("red")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def dir_listing_csaf_red(year, filename):
+    return send_csaf("red", year, filename)
+
+
+@app.route(f'{directory_listing_base_path("unlabeled")}/index.txt', methods=['GET'])
+@require_client_cert
+def directory_listing_index_unlabeled():
+    return offer_if_enabled('directory_listing', index_txt('unlabeled'))
+
+
+@app.route(f'{directory_listing_base_path("unlabeled")}/changes.csv', methods=['GET'])
+@require_client_cert
+def directory_listing_changes_unlabeled():
+    return offer_if_enabled('directory_listing', changes_csv('unlabeled'))
+
+
+@app.route(f'{directory_listing_base_path("unlabeled")}/<string:year>/<string:filename>', methods=['GET'])
+@require_client_cert
+def dir_listing_csaf_unlabeled(year, filename):
+    return send_csaf("unlabeled", year, filename)
 
 
 @app.route(rolie_feed_path('white'), methods=['GET'])
