@@ -22,22 +22,12 @@ def extract_client_certificate() -> Optional[x509.Certificate]:
     """
     Extract the client certificate from the Flask request environment.
     
+    This implementation is specific to Flask's development server (Werkzeug),
+    which exposes the underlying SSL socket in the WSGI environ.
+    
     Returns:
         The parsed X.509 certificate object, or None if no certificate is present.
     """
-    # Try multiple methods to get the peer certificate
-    
-    # Method 1: Check if it's in the environ (some WSGI servers)
-    peercert_der = flask.request.environ.get('peercert')
-    
-    if peercert_der:
-        try:
-            cert = x509.load_der_x509_certificate(peercert_der, default_backend())
-            return cert
-        except Exception as e:
-            print(f"Failed to parse client certificate from environ: {e}")
-    
-    # Method 2: Try to get it from the underlying socket (Werkzeug/Flask dev server)
     try:
         # Access the underlying socket from the WSGI environ
         if 'werkzeug.socket' in flask.request.environ:
@@ -49,16 +39,6 @@ def extract_client_certificate() -> Optional[x509.Certificate]:
                 return cert
     except Exception as e:
         print(f"Failed to get certificate from socket: {e}")
-    
-    # Method 3: Try standard SSL environ variables
-    try:
-        # Some servers expose the certificate in PEM format
-        peercert_pem = flask.request.environ.get('SSL_CLIENT_CERT')
-        if peercert_pem:
-            cert = x509.load_pem_x509_certificate(peercert_pem.encode(), default_backend())
-            return cert
-    except Exception as e:
-        print(f"Failed to parse PEM certificate: {e}")
     
     return None
 
