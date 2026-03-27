@@ -1,7 +1,7 @@
 import flask
 
-from .consts import rolie_feed_path, rolie_feed_csaf_dir
 from .files import csaf_file_exists, find_advisory_files, read_csaf_id
+from .paths import rolie_feed_path, rolie_feed_csaf_dir
 from .state import get_current_release_date, get_latest_release_date, get_config
 from .util import domain_print, now
 

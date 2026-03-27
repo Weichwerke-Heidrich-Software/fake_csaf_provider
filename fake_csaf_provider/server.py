@@ -2,10 +2,10 @@ import flask
 import pathlib
 
 from .auth import get_client_identity, require_client_cert
-from .consts import directory_listing_base_path, rolie_feed_path, rolie_feed_csaf_dir
 from .dirlisting import changes_csv, index_txt
 from .files import send_csaf
 from .metadata import provider_metadata
+from .paths import directory_listing_base_path, rolie_feed_path, rolie_feed_csaf_dir
 from .rolie import rolie_feed, rolie_feed
 from .state import configure, offer_if_enabled, rate_limit_headers, get_retry_after_seconds, log_request
 from .util import security_txt_content

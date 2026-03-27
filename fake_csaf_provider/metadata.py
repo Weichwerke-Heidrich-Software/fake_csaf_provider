@@ -1,7 +1,7 @@
 import flask
 
-from .consts import directory_listing_base_path, rolie_feed_path
 from .files import get_available_tlp_levels
+from .paths import directory_listing_base_path, rolie_feed_path
 from .state import get_config
 from .util import domain_print, now
 
