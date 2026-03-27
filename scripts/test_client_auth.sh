@@ -16,6 +16,7 @@ CLIENT_CERT="crypto/clients/demo-client.crt.pem"
 CLIENT_KEY="crypto/clients/demo-client.key.pem"
 CSAF_DIR="csafs"
 RETURN_CODE=0
+COUNT=0
 
 # Helper function to find first CSAF file for a given TLP level
 find_csaf_path() {
@@ -35,7 +36,61 @@ find_csaf_path() {
     local year=$(basename "$(dirname "$json_file")")
     local filename=$(basename "$json_file")
     
-    echo "/some-${tlp}-csaf-dir-for-rolie/$year/$filename"
+    echo "$year/$filename"
+}
+
+# Helper function to test URL access with or without client certificate
+# Usage: test_url_access "PATH" "success|error" "auth|unauth"
+# - expected_result: "success" for 2xx responses, "error" for 4xx responses
+# - auth_mode: "auth" to use client certificate, "unauth" to skip
+test_url_access() {
+    local path="$1"
+    local auth_mode="$2"
+    local expected_result="$3"
+
+    local url="${BASE_URL}${path}"
+    
+    # Resolve expected result to pattern
+    local expected_pattern
+    if [ "$expected_result" = "success" ]; then
+        expected_pattern="^2[0-9][0-9]$"
+    elif [ "$expected_result" = "error" ]; then
+        expected_pattern="^4[0-9][0-9]$"
+    else
+        echo "✗ ERROR: Invalid expected_result '$expected_result'. Use 'success' or 'error'."
+        RETURN_CODE=1
+        return
+    fi
+    
+    # Build curl command
+    local curl_cmd="curl -s --cacert \"$CA_CERT\""
+    if [ "$auth_mode" = "auth" ]; then
+        curl_cmd="$curl_cmd --cert \"$CLIENT_CERT\" --key \"$CLIENT_KEY\""
+    elif [ "$auth_mode" != "unauth" ]; then
+        echo "✗ ERROR: Invalid auth_mode '$auth_mode'. Use 'auth' or 'unauth'."
+        RETURN_CODE=1
+        return
+    fi
+    curl_cmd="$curl_cmd \"$url\" -o /dev/null -w \"%{http_code}\""
+    
+    echo -n "Accessing ${path} with"
+    if [ "$auth_mode" = "unauth" ]; then
+        echo -n "out"
+    fi
+    echo " client certificate..."
+    
+    # Execute curl and capture HTTP code
+    local http_code=$(eval $curl_cmd)
+    COUNT=$((COUNT + 1))
+    
+    # Check if response matches expected pattern
+    if [[ "$http_code" =~ $expected_pattern ]]; then
+        echo "✓ PASS: Got expected HTTP $http_code"
+    else
+        echo "✗ FAIL: Expected $expected_result ($expected_pattern), got HTTP $http_code"
+        RETURN_CODE=1
+    fi
+    echo ""
 }
 
 echo "========================================="
@@ -96,93 +151,27 @@ echo "Found WHITE CSAF: $WHITE_CSAF"
 echo "Found AMBER CSAF: $AMBER_CSAF"
 echo ""
 
-# Test 1: Access public WHITE content without client certificate
-echo "Test 1: Accessing TLP:WHITE content without client certificate..."
-HTTP_CODE=$(curl -s --cacert "$CA_CERT" \
-    "${BASE_URL}${WHITE_CSAF}" \
-    -o /dev/null -w "%{http_code}")
-if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-    echo "✓ PASS: WHITE content accessible without client certificate (HTTP $HTTP_CODE)"
-else
-    echo "✗ FAIL: WHITE content should return 2xx, got HTTP $HTTP_CODE"
-    RETURN_CODE=1
-fi
-echo ""
+WHITE_ROLIE_CSAF="/some-white-csaf-dir-for-rolie/${WHITE_CSAF}"
+AMBER_ROLIE_CSAF="/some-amber-csaf-dir-for-rolie/${AMBER_CSAF}"
+readonly WHITE_ROLIE_FEED="/some-white-rolie-dir/some-feed.json"
+readonly AMBER_ROLIE_FEED="/some-amber-rolie-dir/some-feed.json"
+WHITE_DIRLIST_CSAF="/some-white-csaf-base-path/${WHITE_CSAF}"
+AMBER_DIRLIST_CSAF="/some-amber-csaf-base-path/${AMBER_CSAF}"
+test_url_access "${WHITE_ROLIE_CSAF}" "unauth" "success"
+test_url_access "${AMBER_ROLIE_CSAF}" "unauth" "error"
+test_url_access "${AMBER_ROLIE_CSAF}" "auth" "success"
+test_url_access "${WHITE_ROLIE_FEED}" "unauth" "success"
+test_url_access "${AMBER_ROLIE_FEED}" "unauth" "error"
+test_url_access "${AMBER_ROLIE_FEED}" "auth" "success"
+test_url_access "${WHITE_DIRLIST_CSAF}" "unauth" "success"
+test_url_access "${AMBER_DIRLIST_CSAF}" "unauth" "error"
+test_url_access "${AMBER_DIRLIST_CSAF}" "auth" "success"
 
-# Test 2: Access protected content without client certificate (should fail)
-echo "Test 2: Accessing TLP:AMBER content without client certificate..."
-HTTP_CODE=$(curl -s --cacert "$CA_CERT" \
-    "${BASE_URL}${AMBER_CSAF}" \
-    -o /dev/null -w "%{http_code}")
-if [[ "$HTTP_CODE" =~ ^4[0-9][0-9]$ ]]; then
-    echo "✓ PASS: AMBER content correctly rejected without client certificate (HTTP $HTTP_CODE)"
-else
-    echo "✗ FAIL: Expected 4xx client error, got HTTP $HTTP_CODE"
-    RETURN_CODE=1
-fi
-echo ""
-
-# Test 3: Access protected content with valid client certificate
-echo "Test 3: Accessing TLP:AMBER content with valid client certificate..."
-HTTP_CODE=$(curl -s --cacert "$CA_CERT" \
-    --cert "$CLIENT_CERT" \
-    --key "$CLIENT_KEY" \
-    "${BASE_URL}${AMBER_CSAF}" \
-    -o /dev/null -w "%{http_code}")
-if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-    echo "✓ PASS: AMBER content accessible with valid client certificate (HTTP $HTTP_CODE)"
-else
-    echo "✗ FAIL: Expected 2xx success, got HTTP $HTTP_CODE"
-    RETURN_CODE=1
-fi
-echo ""
-
-# Test 4: Access ROLIE feed for WHITE (public)
-echo "Test 4: Accessing TLP:WHITE ROLIE feed without client certificate..."
-HTTP_CODE=$(curl -s --cacert "$CA_CERT" \
-    "${BASE_URL}/some-white-rolie-dir/some-feed.json" \
-    -o /dev/null -w "%{http_code}")
-if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-    echo "✓ PASS: WHITE ROLIE feed accessible without client certificate (HTTP $HTTP_CODE)"
-else
-    echo "✗ FAIL: Expected 2xx success, got HTTP $HTTP_CODE"
-    RETURN_CODE=1
-fi
-echo ""
-
-# Test 5: Access ROLIE feed for AMBER (protected) without certificate
-echo "Test 5: Accessing TLP:AMBER ROLIE feed without client certificate..."
-HTTP_CODE=$(curl -s --cacert "$CA_CERT" \
-    "${BASE_URL}/some-amber-rolie-dir/some-feed.json" \
-    -o /dev/null -w "%{http_code}")
-if [[ "$HTTP_CODE" =~ ^4[0-9][0-9]$ ]]; then
-    echo "✓ PASS: AMBER ROLIE feed correctly rejected without client certificate (HTTP $HTTP_CODE)"
-else
-    echo "✗ FAIL: Expected 4xx client error, got HTTP $HTTP_CODE"
-    RETURN_CODE=1
-fi
-echo ""
-
-# Test 6: Access ROLIE feed for AMBER (protected) with certificate
-echo "Test 6: Accessing TLP:AMBER ROLIE feed with client certificate..."
-HTTP_CODE=$(curl -s --cacert "$CA_CERT" \
-    --cert "$CLIENT_CERT" \
-    --key "$CLIENT_KEY" \
-    "${BASE_URL}/some-amber-rolie-dir/some-feed.json" \
-    -o /dev/null -w "%{http_code}")
-if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-    echo "✓ PASS: AMBER ROLIE feed accessible with client certificate (HTTP $HTTP_CODE)"
-else
-    echo "✗ FAIL: Expected 2xx success, got HTTP $HTTP_CODE"
-    RETURN_CODE=1
-fi
-echo ""
-
-# Test 7: Verify metadata includes all TLP levels
-echo "Test 7: Checking provider metadata for TLP level advertisements..."
+echo "Checking provider metadata for TLP level advertisements..."
 METADATA=$(curl -s --cacert "$CA_CERT" \
     "${BASE_URL}/obscure/path/to/provider-metadata.json")
 
+COUNT=$((COUNT + 1))
 if echo "$METADATA" | grep -q "WHITE"; then
     echo "✓ PASS: Metadata includes TLP:WHITE"
 else
@@ -211,7 +200,7 @@ echo "Test Summary"
 echo "========================================="
 
 if [ $RETURN_CODE -eq 0 ]; then
-    echo "✓ ALL TESTS PASSED"
+    echo "✓ ALL ${COUNT} TESTS PASSED"
     echo ""
     echo "Client certificate authentication is working correctly."
     echo ""
@@ -222,7 +211,7 @@ if [ $RETURN_CODE -eq 0 ]; then
     echo "- Client certificate validation is enforced"
     echo "- Metadata advertises all available TLP levels"
 else
-    echo "✗ TESTS FAILED"
+    echo "✗ SOME OF THE ${COUNT} TESTS FAILED"
     echo ""
     echo "ERROR: One or more tests failed. Please review the output above."
     echo "Client certificate authentication is NOT working as expected."
