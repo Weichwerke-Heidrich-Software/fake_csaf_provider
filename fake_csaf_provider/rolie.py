@@ -54,7 +54,7 @@ def rolie_feed(tlp):
               "href": f"https://{domain_print}{csaf_dir}/{year}/{file}"
             }
           ],
-          "published": updated_str,
+          "published": updated_str, # This is not technically correct, but irrelevant for our purposes.
           "updated": updated_str,
           "content": {
             "type": "application/json",

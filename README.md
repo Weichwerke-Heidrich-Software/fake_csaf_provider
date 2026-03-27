@@ -126,12 +126,6 @@ Run the test script to verify client certificate authentication is working:
 ./scripts/test_client_auth.sh
 ```
 
-This script tests:
-- Public access to TLP:WHITE content
-- Protected access to non-white TLP content
-- Certificate validation
-- ROLIE feed access for different TLP levels
-
 #### Provider Metadata
 
 When ROLIE feeds are enabled, the provider metadata automatically advertises all available TLP levels. Clients with valid certificates can discover and access feeds for all TLP levels present in the `csafs/` directory.
