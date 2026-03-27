@@ -1,7 +1,7 @@
 import flask
 import pathlib
 
-from .auth import get_client_identity, require_client_cert
+from .auth import is_client_authenticated, require_client_cert
 from .dirlisting import changes_csv, index_txt
 from .files import send_csaf
 from .metadata import provider_metadata
@@ -12,14 +12,6 @@ from .util import security_txt_content
 
 
 app = flask.Flask(__name__)
-
-
-@app.before_request
-def extract_client_identity():
-    """Extract and validate client certificate before processing request."""
-    flask.g.client_identity = get_client_identity()
-    if flask.g.client_identity:
-        print(f"Authenticated client: {flask.g.client_identity.get('common_name')}")
 
 
 @app.before_request

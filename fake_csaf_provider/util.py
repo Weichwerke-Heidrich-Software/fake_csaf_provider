@@ -1,6 +1,7 @@
 import datetime
-import flask
 import os
+
+from .auth import is_client_authenticated
 from .state import get_config
 
 domain = os.environ.get("FAKE_CSAF_DOMAIN", "localhost")
@@ -57,12 +58,7 @@ def get_accessible_tlp_levels(available_tlps: list[str]) -> list[str]:
     Returns:
         List of TLP levels accessible to the current client
     """
-    # Check if client is authenticated
-    client_identity = getattr(flask.g, 'client_identity', None)
-    
-    if client_identity:
-        # Authenticated: return all available TLP levels
+    if is_client_authenticated():
         return available_tlps
     else:
-        # Unauthenticated: only return white and clear
         return [tlp for tlp in available_tlps if tlp in ('white', 'clear')]
