@@ -15,6 +15,7 @@ CA_CERT="crypto/ca.crt.pem"
 CLIENT_CERT="crypto/clients/demo-client.crt.pem"
 CLIENT_KEY="crypto/clients/demo-client.key.pem"
 CSAF_DIR="csafs"
+RETURN_CODE=0
 
 # Helper function to find first CSAF file for a given TLP level
 find_csaf_path() {
@@ -104,6 +105,7 @@ if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
     echo "✓ PASS: WHITE content accessible without client certificate (HTTP $HTTP_CODE)"
 else
     echo "✗ FAIL: WHITE content should return 2xx, got HTTP $HTTP_CODE"
+    RETURN_CODE=1
 fi
 echo ""
 
@@ -116,6 +118,7 @@ if [[ "$HTTP_CODE" =~ ^4[0-9][0-9]$ ]]; then
     echo "✓ PASS: AMBER content correctly rejected without client certificate (HTTP $HTTP_CODE)"
 else
     echo "✗ FAIL: Expected 4xx client error, got HTTP $HTTP_CODE"
+    RETURN_CODE=1
 fi
 echo ""
 
@@ -130,6 +133,7 @@ if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
     echo "✓ PASS: AMBER content accessible with valid client certificate (HTTP $HTTP_CODE)"
 else
     echo "✗ FAIL: Expected 2xx success, got HTTP $HTTP_CODE"
+    RETURN_CODE=1
 fi
 echo ""
 
@@ -142,6 +146,7 @@ if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
     echo "✓ PASS: WHITE ROLIE feed accessible without client certificate (HTTP $HTTP_CODE)"
 else
     echo "✗ FAIL: Expected 2xx success, got HTTP $HTTP_CODE"
+    RETURN_CODE=1
 fi
 echo ""
 
@@ -154,6 +159,7 @@ if [[ "$HTTP_CODE" =~ ^4[0-9][0-9]$ ]]; then
     echo "✓ PASS: AMBER ROLIE feed correctly rejected without client certificate (HTTP $HTTP_CODE)"
 else
     echo "✗ FAIL: Expected 4xx client error, got HTTP $HTTP_CODE"
+    RETURN_CODE=1
 fi
 echo ""
 
@@ -168,6 +174,7 @@ if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
     echo "✓ PASS: AMBER ROLIE feed accessible with client certificate (HTTP $HTTP_CODE)"
 else
     echo "✗ FAIL: Expected 2xx success, got HTTP $HTTP_CODE"
+    RETURN_CODE=1
 fi
 echo ""
 
@@ -180,6 +187,7 @@ if echo "$METADATA" | grep -q "WHITE"; then
     echo "✓ PASS: Metadata includes TLP:WHITE"
 else
     echo "✗ FAIL: Metadata missing TLP:WHITE"
+    RETURN_CODE=1
 fi
 
 # Check for other TLP levels if they exist in the csafs directory
@@ -201,14 +209,25 @@ echo "Server stopped."
 echo "========================================="
 echo "Test Summary"
 echo "========================================="
-echo "Client certificate authentication is working correctly."
-echo ""
-echo "Key findings:"
-echo "- TLP:WHITE content is publicly accessible (2xx responses)"
-echo "- Non-WHITE TLP content requires valid client certificates"
-echo "- Requests without certificates receive 4xx client errors"
-echo "- Client certificate validation is enforced"
-echo "- Metadata advertises all available TLP levels"
+
+if [ $RETURN_CODE -eq 0 ]; then
+    echo "✓ ALL TESTS PASSED"
+    echo ""
+    echo "Client certificate authentication is working correctly."
+    echo ""
+    echo "Key findings:"
+    echo "- TLP:WHITE content is publicly accessible (2xx responses)"
+    echo "- Non-WHITE TLP content requires valid client certificates"
+    echo "- Requests without certificates receive 4xx client errors"
+    echo "- Client certificate validation is enforced"
+    echo "- Metadata advertises all available TLP levels"
+else
+    echo "✗ TESTS FAILED"
+    echo ""
+    echo "ERROR: One or more tests failed. Please review the output above."
+    echo "Client certificate authentication is NOT working as expected."
+fi
+
 echo ""
 echo "To test manually:"
 echo "  # Without certificate (should fail for AMBER):"
@@ -221,3 +240,5 @@ echo ""
 echo "  # WHITE content (should succeed without certificate):"
 echo "  curl --cacert $CA_CERT ${BASE_URL}${WHITE_CSAF}"
 echo ""
+
+exit $RETURN_CODE
