@@ -25,20 +25,42 @@ def extract_client_certificate() -> Optional[x509.Certificate]:
     Returns:
         The parsed X.509 certificate object, or None if no certificate is present.
     """
-    # Flask/Werkzeug stores the peer certificate in the request environ
-    # when using SSL with client certificate verification
+    # Try multiple methods to get the peer certificate
+    
+    # Method 1: Check if it's in the environ (some WSGI servers)
     peercert_der = flask.request.environ.get('peercert')
     
-    if not peercert_der:
-        return None
+    if peercert_der:
+        try:
+            cert = x509.load_der_x509_certificate(peercert_der, default_backend())
+            return cert
+        except Exception as e:
+            print(f"Failed to parse client certificate from environ: {e}")
     
+    # Method 2: Try to get it from the underlying socket (Werkzeug/Flask dev server)
     try:
-        # The certificate is provided in DER format
-        cert = x509.load_der_x509_certificate(peercert_der, default_backend())
-        return cert
+        # Access the underlying socket from the WSGI environ
+        if 'werkzeug.socket' in flask.request.environ:
+            sock = flask.request.environ['werkzeug.socket']
+            # Get the peer certificate in binary DER format
+            peercert_binary = sock.getpeercert(binary_form=True)
+            if peercert_binary:
+                cert = x509.load_der_x509_certificate(peercert_binary, default_backend())
+                return cert
     except Exception as e:
-        print(f"Failed to parse client certificate: {e}")
-        return None
+        print(f"Failed to get certificate from socket: {e}")
+    
+    # Method 3: Try standard SSL environ variables
+    try:
+        # Some servers expose the certificate in PEM format
+        peercert_pem = flask.request.environ.get('SSL_CLIENT_CERT')
+        if peercert_pem:
+            cert = x509.load_pem_x509_certificate(peercert_pem.encode(), default_backend())
+            return cert
+    except Exception as e:
+        print(f"Failed to parse PEM certificate: {e}")
+    
+    return None
 
 
 def validate_client_certificate(cert: x509.Certificate, ca_path: str) -> bool:

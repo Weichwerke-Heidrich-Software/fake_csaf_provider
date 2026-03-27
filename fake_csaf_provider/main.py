@@ -29,6 +29,7 @@ def create_ssl_context():
         # CERT_OPTIONAL allows connections with or without client certificates
         # The auth module will enforce requirements on protected routes
         context.verify_mode = ssl.CERT_OPTIONAL
+        context.check_hostname = False
         print(f"Client certificate verification enabled using CA: {ca_path}")
     else:
         print(f"CA certificate not found at {ca_path}, client auth disabled")
