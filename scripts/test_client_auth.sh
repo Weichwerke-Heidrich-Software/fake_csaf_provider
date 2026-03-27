@@ -112,7 +112,7 @@ echo ""
 
 # Activate all endpoints using configure.sh
 echo ">>> Activating all endpoints..."
-./scripts/configure.sh --all
+./scripts/configure.sh --all --verify
 echo ""
 echo "All endpoints activated successfully!"
 echo ""
