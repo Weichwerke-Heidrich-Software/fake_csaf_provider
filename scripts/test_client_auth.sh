@@ -167,24 +167,52 @@ test_url_access "${WHITE_DIRLIST_CSAF}" "unauth" "success"
 test_url_access "${AMBER_DIRLIST_CSAF}" "unauth" "error"
 test_url_access "${AMBER_DIRLIST_CSAF}" "auth" "success"
 
-echo "Checking provider metadata for TLP level advertisements..."
-METADATA=$(curl -s --cacert "$CA_CERT" \
-    "${BASE_URL}/obscure/path/to/provider-metadata.json")
+echo "========================================="
+echo "Testing Provider Metadata TLP Filtering"
+echo "========================================="
+echo ""
+
+PROVIDER_URL="${BASE_URL}/obscure/path/to/provider-metadata.json"
+echo ">>> Testing metadata WITHOUT client certificate..."
+METADATA_UNAUTH=$(curl -s --cacert "$CA_CERT" "${PROVIDER_URL}")
 
 COUNT=$((COUNT + 1))
-if echo "$METADATA" | grep -q "WHITE"; then
-    echo "✓ PASS: Metadata includes TLP:WHITE"
+if echo "$METADATA_UNAUTH" | grep -q "WHITE\|CLEAR"; then
+    echo "✓ PASS: Unauthenticated metadata includes TLP:WHITE or TLP:CLEAR"
 else
-    echo "✗ FAIL: Metadata missing TLP:WHITE"
+    echo "✗ FAIL: Unauthenticated metadata missing TLP:WHITE and TLP:CLEAR"
     RETURN_CODE=1
 fi
 
-# Check for other TLP levels if they exist in the csafs directory
-for TLP in AMBER GREEN RED CLEAR; do
-    if echo "$METADATA" | grep -q "$TLP"; then
-        echo "✓ PASS: Metadata includes TLP:$TLP"
+COUNT=$((COUNT + 1))
+if echo "$METADATA_UNAUTH" | grep -q "AMBER\|GREEN\|RED"; then
+    echo "✗ FAIL: Unauthenticated metadata incorrectly includes restricted TLP levels (AMBER/GREEN/RED)"
+    RETURN_CODE=1
+else
+    echo "✓ PASS: Unauthenticated metadata correctly excludes restricted TLP levels"
+fi
+echo ""
+
+echo ">>> Testing metadata WITH client certificate..."
+METADATA_AUTH=$(curl -s --cacert "$CA_CERT" --cert "$CLIENT_CERT" --key "$CLIENT_KEY" "${PROVIDER_URL}")
+
+COUNT=$((COUNT + 1))
+if echo "$METADATA_AUTH" | grep -q "WHITE\|CLEAR"; then
+    echo "✓ PASS: Authenticated metadata includes TLP:WHITE or TLP:CLEAR"
+else
+    echo "✗ FAIL: Authenticated metadata missing TLP:WHITE and TLP:CLEAR"
+    RETURN_CODE=1
+fi
+
+echo ""
+echo "Checking for additional TLP levels in authenticated metadata..."
+for TLP in AMBER GREEN RED; do
+    COUNT=$((COUNT + 1))
+    if echo "$METADATA_AUTH" | grep -q "$TLP"; then
+        echo "✓ PASS: Authenticated metadata includes TLP:$TLP"
     else
-        echo "⚠ INFO: Metadata does not include TLP:$TLP (may not be available)"
+        echo "✗ FAIL: Authenticated metadata missing TLP:$TLP"
+        RETURN_CODE=1
     fi
 done
 echo ""
@@ -205,11 +233,13 @@ if [ $RETURN_CODE -eq 0 ]; then
     echo "Client certificate authentication is working correctly."
     echo ""
     echo "Key findings:"
-    echo "- TLP:WHITE content is publicly accessible (2xx responses)"
-    echo "- Non-WHITE TLP content requires valid client certificates"
+    echo "- TLP:WHITE/CLEAR content is publicly accessible (2xx responses)"
+    echo "- Non-WHITE/CLEAR TLP content requires valid client certificates"
     echo "- Requests without certificates receive 4xx client errors"
     echo "- Client certificate validation is enforced"
-    echo "- Metadata advertises all available TLP levels"
+    echo "- Metadata filtering works correctly:"
+    echo "  * Unauthenticated: Only WHITE/CLEAR TLP levels advertised"
+    echo "  * Authenticated: All available TLP levels advertised"
 else
     echo "✗ SOME OF THE ${COUNT} TESTS FAILED"
     echo ""

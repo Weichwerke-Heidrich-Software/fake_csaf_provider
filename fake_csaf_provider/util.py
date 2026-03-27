@@ -1,4 +1,5 @@
 import datetime
+import flask
 import os
 from .state import get_config
 
@@ -41,3 +42,27 @@ CSAF: https://{domain_print}/obscure/path/to/provider-metadata.json
 {openpgp_line}
 Expires: {expires}
 """
+
+
+def get_accessible_tlp_levels(available_tlps: list[str]) -> list[str]:
+    """
+    Filter TLP levels based on client authentication status.
+    
+    Returns only 'white' and 'clear' TLP levels for unauthenticated clients.
+    Returns all available TLP levels for authenticated clients.
+    
+    Args:
+        available_tlps: List of all available TLP levels
+        
+    Returns:
+        List of TLP levels accessible to the current client
+    """
+    # Check if client is authenticated
+    client_identity = getattr(flask.g, 'client_identity', None)
+    
+    if client_identity:
+        # Authenticated: return all available TLP levels
+        return available_tlps
+    else:
+        # Unauthenticated: only return white and clear
+        return [tlp for tlp in available_tlps if tlp in ('white', 'clear')]

@@ -3,7 +3,7 @@ import flask
 from .files import get_available_tlp_levels
 from .paths import directory_listing_base_path, rolie_feed_path
 from .state import get_config
-from .util import domain_print, now
+from .util import domain_print, now, get_accessible_tlp_levels
 
 def provider_metadata():
     canonical_url = f"https://{domain_print}/obscure/path/to/provider-metadata.json"
@@ -25,7 +25,11 @@ def provider_metadata():
     }
     offer_dirlisting = get_config('directory_listing')
     if offer_dirlisting:
-        for tlp in get_available_tlp_levels():
+        # Only offer directories accessible to the current client
+        available_tlps = get_available_tlp_levels()
+        accessible_tlps = get_accessible_tlp_levels(available_tlps)
+        
+        for tlp in accessible_tlps:
             dirlisting = {
                 "directory_url": f"https://{domain_print}/{directory_listing_base_path(tlp)}/"
             }
@@ -33,11 +37,12 @@ def provider_metadata():
     
     offer_rolie = get_config('rolie_feed')
     if offer_rolie:
-        # Build list of all available TLP feeds
+        # Build list of accessible TLP feeds based on authentication
         feeds = []
         available_tlps = get_available_tlp_levels()
+        accessible_tlps = get_accessible_tlp_levels(available_tlps)
         
-        for tlp in available_tlps:
+        for tlp in accessible_tlps:
             tlp_display = tlp.upper().replace('+', ':')
             feed_path = rolie_feed_path(tlp)
             feeds.append({
