@@ -94,16 +94,16 @@ The server supports mutual TLS (mTLS) authentication using client certificates. 
 
 #### Generating Client Certificates
 
-The setup script automatically generates a demo client certificate. To create additional client certificates:
+The setup script automatically generates a test client certificate. To create additional client certificates:
 
 ```sh
 python3 -m fake_tls_certificate.main --client-cert <client-name>
 ```
 
 This creates:
-- `crypto/clients/<client-name>.crt.pem` - Client certificate
-- `crypto/clients/<client-name>.key.pem` - Client private key
-- `crypto/clients/<client-name>.chain.pem` - Combined certificate and key
+- `crypto/<client-name>.crt.pem` - Client certificate
+- `crypto/<client-name>.key.pem` - Client private key
+- `crypto/<client-name>.chain.pem` - Combined certificate and key
 
 All client certificates are signed by the same CA (`crypto/ca.crt.pem`) that signs the server certificate.
 
@@ -113,8 +113,8 @@ To access protected TLP content, provide the client certificate and key when mak
 
 ```sh
 curl --cacert crypto/ca.crt.pem \
-     --cert crypto/clients/demo-client.crt.pem \
-     --key crypto/clients/demo-client.key.pem \
+     --cert crypto/testclient.crt.pem \
+     --key crypto/testclient.key.pem \
      https://localhost:34443/some-amber-csaf-dir-for-rolie/2024/advisory.json
 ```
 

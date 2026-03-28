@@ -3,9 +3,12 @@
 Produces:
 - ca.key.pem (private key for the test CA)
 - ca.crt.pem (CA certificate)
-- server.key.pem (private key for the server)
-- server.crt.pem (server certificate signed by the CA)
-- server.chain.pem (concatenation of server key + cert)
+- <server-name>.key.pem (private key for the server)
+- <server-name>.crt.pem (server certificate signed by the CA)
+- <server-name>.chain.pem (certificate chain: server cert + CA cert)
+- <client-name>.key.pem (private key for the client, if --client-cert is used)
+- <client-name>.crt.pem (client certificate signed by the CA, if --client-cert is used)
+- <client-name>.chain.pem (certificate chain: client cert + CA cert, if --client-cert is used)
 """
 
 
@@ -215,7 +218,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--client-cert",
         metavar="NAME",
-        help="Generate a client certificate with the given name (stored in outdir/clients/)",
+        help="Generate a client certificate with the given name (stored in outdir/)",
     )
 
     args = parser.parse_args(argv)
@@ -232,23 +235,20 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.client_cert:
         # Generate client certificate
-        clients_dir = outdir / "clients"
-        clients_dir.mkdir(parents=True, exist_ok=True)
-        
         client_key = make_rsa_key(KEY_SIZE)
         client_cert = build_client_cert(client_key, ca_key, ca_cert, args.client_cert, args.days)
         
         client_files = {
-            "client_key": clients_dir / f"{args.client_cert}.key.pem",
-            "client_cert": clients_dir / f"{args.client_cert}.crt.pem",
-            "client_pem": clients_dir / f"{args.client_cert}.chain.pem",
+            "client_key": outdir / f"{args.client_cert}.key.pem",
+            "client_cert": outdir / f"{args.client_cert}.crt.pem",
+            "client_pem": outdir / f"{args.client_cert}.chain.pem",
         }
         
         write_key(client_files["client_key"], client_key)
         write_cert(client_files["client_cert"], client_cert)
         
-        # combined client pem (key + cert)
-        client_pem_data = client_files["client_key"].read_bytes() + b"\n" + client_files["client_cert"].read_bytes()
+        # client certificate chain (client cert + CA cert, no private key)
+        client_pem_data = client_files["client_cert"].read_bytes() + b"\n" + files["ca_cert"].read_bytes()
         client_files["client_pem"].write_bytes(client_pem_data)
         
         print("Wrote client certificate:")
@@ -270,8 +270,8 @@ def main(argv: list[str] | None = None) -> None:
         write_key(files["server_key"], server_key)
         write_cert(files["server_cert"], server_cert)
 
-        # combined server pem (key + cert)
-        server_pem_data = files["server_key"].read_bytes() + b"\n" + files["server_cert"].read_bytes()
+        # server certificate chain (server cert + CA cert, no private key)
+        server_pem_data = files["server_cert"].read_bytes() + b"\n" + files["ca_cert"].read_bytes()
         files["server_pem"].write_bytes(server_pem_data)
 
         print("Wrote:")

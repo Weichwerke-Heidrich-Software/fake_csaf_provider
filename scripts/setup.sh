@@ -13,5 +13,5 @@ $venv_py -m pip install pip
 $venv_py -m pip install -r ./requirements.txt
 
 $venv_py -m fake_tls_certificate.main
-$venv_py -m fake_tls_certificate.main --client-cert demo-client
+$venv_py -m fake_tls_certificate.main --client-cert testclient
 $venv_py -m fake_openpgp_key.main
