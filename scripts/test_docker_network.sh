@@ -64,7 +64,7 @@ docker run --rm \
     --network "$NETWORK_NAME" \
     -v "$PROJECT_ROOT/crypto:/crypto:ro" \
     curlimages/curl:latest \
-    curl -v --cacert "/crypto/ca.crt.pem" \
+    curl -f -v --cacert "/crypto/ca.crt.pem" \
     "https://${TEST_DOMAIN}/obscure/path/to/provider-metadata.json" 2>&1
 echo ""
 
