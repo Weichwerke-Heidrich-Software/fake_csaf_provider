@@ -66,6 +66,7 @@ def _load_private_key():
     key_path = project_root / 'crypto' / 'openpgp.key.asc'
     
     if not key_path.exists():
+        flask.current_app.logger.error(f'Private key not found at {key_path}')
         raise FileNotFoundError(f'Private key not found at {key_path}')
     
     key_text = key_path.read_text()
@@ -75,6 +76,7 @@ def _load_private_key():
 
 def _create_signature(json_path: Path) -> str:
     if not json_path.exists():
+        flask.current_app.logger.error(f'JSON file not found at {json_path}')
         raise FileNotFoundError(f'JSON file not found at {json_path}')
     
     private_key = _load_private_key()
@@ -89,6 +91,7 @@ def _send_signature(tlp, year, filename):
     json_path = _csaf_dir / tlp / year / json_filename
     
     if not json_path.is_file():
+        flask.current_app.logger.error(f'CSAF file not found at {json_path}')
         flask.abort(404, description='CSAF file not found')
     
     try:
@@ -102,6 +105,7 @@ def _send_signature(tlp, year, filename):
 def _create_hash(json_path: Path, algorithm: str) -> str:
     """Create a hash of the JSON file using the specified algorithm (sha256 or sha512)."""
     if not json_path.exists():
+        flask.current_app.logger.error(f'JSON file not found at {json_path}')
         raise FileNotFoundError(f'JSON file not found at {json_path}')
     
     json_content = json_path.read_bytes()
@@ -111,6 +115,7 @@ def _create_hash(json_path: Path, algorithm: str) -> str:
     elif algorithm == 'sha512':
         hash_obj = hashlib.sha512(json_content)
     else:
+        flask.current_app.logger.error(f'Unsupported hash algorithm: {algorithm}')
         raise ValueError(f'Unsupported hash algorithm: {algorithm}')
     
     hash_hex = hash_obj.hexdigest()
@@ -160,6 +165,7 @@ def read_current_release_date(path: str) -> datetime.datetime:
         datestring = data['document']['tracking']['current_release_date']
         return datetime.datetime.fromisoformat(datestring.replace('Z', '+00:00'))
     except (KeyError, TypeError) as err:
+        flask.current_app.logger.error('current_release_date not found in JSON')
         raise ValueError('current_release_date not found in JSON') from err
 
 
