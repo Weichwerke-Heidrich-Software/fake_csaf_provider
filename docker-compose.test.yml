@@ -3,9 +3,11 @@ services:
     build: .
     container_name: fake_csaf_compose_test_server
     networks:
-      - csaf_test_network
+      csaf_test_network:
+        aliases:
+          - fake-csaf-provider
     environment:
-      - FAKE_CSAF_DOMAIN=fake_csaf_provider
+      - FAKE_CSAF_DOMAIN=fake-csaf-provider
       - FAKE_CSAF_PORT=443
     volumes:
       - ./crypto:/app/crypto:ro

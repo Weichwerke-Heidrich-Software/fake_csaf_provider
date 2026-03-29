@@ -1,10 +1,28 @@
 import datetime
 import os
+import re
+import sys
 
 from .auth import is_client_authenticated
 from .state import get_config
 
 domain = os.environ.get('FAKE_CSAF_DOMAIN', 'localhost')
+
+# Validate domain name against Werkzeug's hostname validation rules
+# Werkzeug only allows: a-z, 0-9, dots, and hyphens (no underscores!)
+_valid_hostname_re = re.compile(r'^[a-z0-9.-]+$', re.IGNORECASE)
+
+if not _valid_hostname_re.match(domain):
+    print(f"ERROR: Invalid domain name '{domain}'", file=sys.stderr)
+    print(f"", file=sys.stderr)
+    print(f"The FAKE_CSAF_DOMAIN environment variable contains invalid characters.", file=sys.stderr)
+    print(f"Werkzeug's trusted host validation only allows:", file=sys.stderr)
+    print(f"  - Letters (a-z, A-Z)", file=sys.stderr)
+    print(f"  - Numbers (0-9)", file=sys.stderr)
+    print(f"  - Dots (.)", file=sys.stderr)
+    print(f"  - Hyphens (-)", file=sys.stderr)
+    sys.exit(1)
+
 port = os.environ.get('FAKE_CSAF_PORT', 34443)
 port_print = f':{port}' if port not in (80, 443) else ''
 domain_print = f'{domain}{port_print}'

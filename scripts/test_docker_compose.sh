@@ -27,7 +27,7 @@ if [ ! -f "$COMPOSE_FILE" ]; then
 fi
 
 # Generate certificate for test domain if it doesn't exist
-TEST_DOMAIN="fake_csaf_provider"
+TEST_DOMAIN="fake-csaf-provider"
 if [ ! -f "$PROJECT_ROOT/crypto/${TEST_DOMAIN}.crt.pem" ]; then
     echo "Generating certificate for domain: $TEST_DOMAIN"
     cd "$PROJECT_ROOT"
