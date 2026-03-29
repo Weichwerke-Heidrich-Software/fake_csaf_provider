@@ -43,6 +43,18 @@ def create_ssl_context():
     return context
 
 
+# Monkey-patch Werkzeug's host_is_trusted function to always return True
+# This must happen at module level to affect both parent and reloader processes
+import werkzeug.sansio.utils
+_original_host_is_trusted = werkzeug.sansio.utils.host_is_trusted
+
+def _patched_host_is_trusted(host, trusted_hosts=None):
+    # Always return True to disable the trusted host check
+    return True
+
+werkzeug.sansio.utils.host_is_trusted = _patched_host_is_trusted
+
+
 if __name__ == '__main__':
     if not cert_path.exists() or not key_path.exists():
         raise FileNotFoundError(f'TLS certificate or key not found: {cert_path}, {key_path}\nHave you run the setup script?')
