@@ -50,7 +50,6 @@ docker run -d \
     --network-alias "$TEST_DOMAIN" \
     -e FAKE_CSAF_DOMAIN="$TEST_DOMAIN" \
     -e FAKE_CSAF_PORT=443 \
-    -e TRUSTED_HOSTS=any \
     -v "$PROJECT_ROOT/crypto:/app/crypto:ro" \
     -v "$PROJECT_ROOT/csafs:/app/csafs:ro" \
     fake_csaf_provider
