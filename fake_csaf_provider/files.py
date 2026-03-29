@@ -83,6 +83,22 @@ def _create_signature(json_path: Path) -> str:
     return str(signature)
 
 
+def _send_signature(tlp, year, filename):
+    # Remove the .asc extension to get the JSON filename
+    json_filename = filename[:-4]
+    json_path = _csaf_dir / tlp / year / json_filename
+    
+    if not json_path.is_file():
+        flask.abort(404, description="CSAF file not found")
+    
+    try:
+        signature = _create_signature(json_path)
+        response = flask.Response(signature, mimetype='application/pgp-signature')
+        return response
+    except Exception as e:
+        flask.abort(500, description=f"Failed to create signature: {str(e)}")
+
+
 def _create_hash(json_path: Path, algorithm: str) -> str:
     """Create a hash of the JSON file using the specified algorithm (sha256 or sha512)."""
     if not json_path.exists():
@@ -102,57 +118,38 @@ def _create_hash(json_path: Path, algorithm: str) -> str:
     return f"{hash_hex}  {filename}\n"
 
 
-def send_csaf(tlp, year, filename):
-    if filename.endswith('.asc'):
-        # Remove the .asc extension to get the JSON filename
-        json_filename = filename[:-4]
-        json_path = _csaf_dir / tlp / year / json_filename
-        
-        if not json_path.is_file():
-            flask.abort(404, description="CSAF file not found")
-        
-        try:
-            signature = _create_signature(json_path)
-            response = flask.Response(signature, mimetype='application/pgp-signature')
-            return response
-        except Exception as e:
-            flask.abort(500, description=f"Failed to create signature: {str(e)}")
+def _send_hash(tlp, year, filename, algorithm: str):
+    # Remove the .sha256 / .sha512 extension to get the JSON filename
+    json_filename = filename[:-7]
+    json_path = _csaf_dir / tlp / year / json_filename
     
-    if filename.endswith('.sha256'):
-        # Remove the .sha256 extension to get the JSON filename
-        json_filename = filename[:-7]
-        json_path = _csaf_dir / tlp / year / json_filename
-        
-        if not json_path.is_file():
-            flask.abort(404, description="CSAF file not found")
-        
-        try:
-            hash_content = _create_hash(json_path, 'sha256')
-            response = flask.Response(hash_content, mimetype='text/plain')
-            return response
-        except Exception as e:
-            flask.abort(500, description=f"Failed to create SHA-256 hash: {str(e)}")
+    if not json_path.is_file():
+        flask.abort(404, description="CSAF file not found")
     
-    if filename.endswith('.sha512'):
-        # Remove the .sha512 extension to get the JSON filename
-        json_filename = filename[:-7]
-        json_path = _csaf_dir / tlp / year / json_filename
-        
-        if not json_path.is_file():
-            flask.abort(404, description="CSAF file not found")
-        
-        try:
-            hash_content = _create_hash(json_path, 'sha512')
-            response = flask.Response(hash_content, mimetype='text/plain')
-            return response
-        except Exception as e:
-            flask.abort(500, description=f"Failed to create SHA-512 hash: {str(e)}")
-    
+    try:
+        hash_content = _create_hash(json_path, 'sha256')
+        response = flask.Response(hash_content, mimetype='text/plain')
+        return response
+    except Exception as e:
+        flask.abort(500, description=f"Failed to create SHA-256 hash: {str(e)}")
+
+
+def _send_csaf(tlp, year, filename):
     # Handle regular JSON file requests
     path = _csaf_dir / tlp / year / filename
     if not path.is_file():
         flask.abort(404, description="CSAF file not found")
     return flask.send_file(str(path), mimetype='application/json')
+
+
+def send_doc(tlp, year, filename):
+    if filename.endswith('.asc'):
+        return _send_signature(tlp, year, filename)
+    if filename.endswith('.sha256'):
+        return _send_hash(tlp, year, filename, 'sha256')
+    if filename.endswith('.sha512'):
+        return _send_hash(tlp, year, filename, 'sha512')
+    return _send_csaf(tlp, year, filename)
 
 
 def read_current_release_date(path: str) -> datetime.datetime:
