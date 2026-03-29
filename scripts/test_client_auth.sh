@@ -14,30 +14,8 @@ BASE_URL="https://${DOMAIN}:${PORT}"
 CA_CERT="crypto/ca.crt.pem"
 CLIENT_CERT="crypto/testclient.crt.pem"
 CLIENT_KEY="crypto/testclient.key.pem"
-CSAF_DIR="csafs"
 RETURN_CODE=0
 COUNT=0
-
-# Helper function to find first CSAF file for a given TLP level
-find_csaf_path() {
-    local tlp="$1"
-    local tlp_dir="$CSAF_DIR/$tlp"
-    
-    if [ ! -d "$tlp_dir" ]; then
-        return 1
-    fi
-    
-    local json_file=$(find "$tlp_dir" -type f -name "*.json" | head -n 1)
-    if [ -z "$json_file" ]; then
-        return 1
-    fi
-    
-    # Extract year and filename from path: csafs/tlp/year/file.json
-    local year=$(basename "$(dirname "$json_file")")
-    local filename=$(basename "$json_file")
-    
-    echo "$year/$filename"
-}
 
 # Helper function to test URL access with or without client certificate
 # Usage: test_url_access "PATH" "success|error" "auth|unauth"
@@ -132,20 +110,9 @@ fi
 
 # Discover actual CSAF files from the csafs directory
 echo ">>> Discovering CSAF files..."
-WHITE_CSAF=$(find_csaf_path "white")
-AMBER_CSAF=$(find_csaf_path "amber")
+WHITE_CSAF=$(./scripts/find_csaf_path.sh "white")
+AMBER_CSAF=$(./scripts/find_csaf_path.sh "amber")
 
-if [ -z "$WHITE_CSAF" ]; then
-    echo "ERROR: No WHITE CSAF files found in $CSAF_DIR/white"
-    ./scripts/stop.sh
-    exit 1
-fi
-
-if [ -z "$AMBER_CSAF" ]; then
-    echo "ERROR: No AMBER CSAF files found in $CSAF_DIR/amber"
-    ./scripts/stop.sh
-    exit 1
-fi
 
 echo "Found WHITE CSAF: $WHITE_CSAF"
 echo "Found AMBER CSAF: $AMBER_CSAF"

@@ -2,6 +2,8 @@
 
 set -e
 
+cd "$(git rev-parse --show-toplevel)"
+
 readonly SERVER="https://localhost:34443"
 readonly CERT_PATH="./crypto/ca.crt.pem"
 
@@ -23,6 +25,10 @@ directory_listing=0
 rolie_feed=0
 # Offer OpenPGP public key via /.well-known/openpgpkey.asc (advertised in security.txt)
 openpgp=0
+# Offer SHA-256 hashes for CSAF documents
+sha256=0
+# Offer SHA-512 hashes for CSAF documents
+sha512=0
 # Set a rate limit
 rate_limit_requests=0
 rate_limit_period_seconds=0
@@ -68,6 +74,14 @@ while [[ $# -gt 0 ]]; do
             openpgp=1
             shift
             ;;
+        --sha256)
+            sha256=1
+            shift
+            ;;
+        --sha512)
+            sha512=1
+            shift
+            ;;
         --rate-limit)
             if [[ $# -lt 3 ]]; then
                 echo "Error: --rate-limit requires two arguments: <requests> <period_seconds>"
@@ -88,6 +102,8 @@ while [[ $# -gt 0 ]]; do
             directory_listing=1
             rolie_feed=1
             openpgp=1
+            sha256=1
+            sha512=1
             shift
             ;;
         --verify)
@@ -117,6 +133,8 @@ payload=$(cat <<JSON
     "directory_listing": $(to_bool "$directory_listing"),
     "rolie_feed": $(to_bool "$rolie_feed"),
     "openpgp": $(to_bool "$openpgp"),
+    "sha256": $(to_bool "$sha256"),
+    "sha512": $(to_bool "$sha512"),
     "rate_limit_requests": $rate_limit_requests,
     "rate_limit_period_seconds": $rate_limit_period_seconds
 }
@@ -180,6 +198,8 @@ function test_rate_limit() {
     fi
 }
 
+csaf_path=$(./scripts/find_csaf_path.sh "white")
+
 # Verify the server configuration
 expect_url "/.well-known/csaf/provider-metadata.json" "$well_known_meta"
 expect_url "/security/data/csaf/provider-metadata.json" "$security_data_meta"
@@ -189,8 +209,20 @@ expect_url "/.well-known/security.txt" "$well_known_security_txt"
 expect_url "/security.txt" "$root_security_txt"
 expect_url "/some-white-csaf-base-path/index.txt" "$directory_listing"
 expect_url "/some-white-csaf-base-path/changes.csv" "$directory_listing"
+expect_url "/some-white-csaf-base-path/${csaf_path}" "$directory_listing"
 expect_url "/some-white-rolie-dir/some-feed.json" "$rolie_feed"
+expect_url "/some-white-csaf-dir-for-rolie/${csaf_path}" "$rolie_feed"
 expect_url "/.well-known/openpgpkey.asc" "$openpgp"
+if [ "$directory_listing" -ne 0 ]; then
+    expect_url "/some-white-csaf-base-path/${csaf_path}.asc" "$openpgp"
+    expect_url "/some-white-csaf-base-path/${csaf_path}.sha256" "$sha256"
+    expect_url "/some-white-csaf-base-path/${csaf_path}.sha512" "$sha512"
+fi
+if [ "$rolie_feed" -ne 0 ]; then
+    expect_url "/some-white-csaf-dir-for-rolie/${csaf_path}.asc" "$openpgp"
+    expect_url "/some-white-csaf-dir-for-rolie/${csaf_path}.sha256" "$sha256"
+    expect_url "/some-white-csaf-dir-for-rolie/${csaf_path}.sha512" "$sha512"
+fi
 
 test_rate_limit
 

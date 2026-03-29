@@ -70,12 +70,12 @@ def rolie_feed(tlp):
               "rel": "signature",
               "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.asc"
           })
-      if csaf_file_exists(tlp, year, f"{file}.sha256"):
+      if get_config('sha256'):
           entry["link"].append({
               "rel": "hash",
               "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.sha256"
           })
-      if csaf_file_exists(tlp, year, f"{file}.sha512"):
+      if get_config('sha512'):
           entry["link"].append({
               "rel": "hash",
               "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.sha512"

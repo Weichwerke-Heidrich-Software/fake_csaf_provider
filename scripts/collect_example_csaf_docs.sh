@@ -21,20 +21,13 @@ echo "Copying some CSAF documents to $dirname."
 mkdir -p $dirname
 
 year_dirs=$(ls "$dirname_all/white/" | grep -E '^[0-9]{4}$')
-for year in $year_dirs; do
+some_years=$(echo "$year_dirs" | sort | tail -n 3)
+for year in $some_years; do
     mkdir -p $dirname/white
     target_dir=$dirname/white/$year
     mkdir -p $target_dir
     first_csaf=$(find "$dirname_all/white/$year" -type f -name "*.json" | head -n 1)
-    first_signature="${first_csaf}.asc"
-    first_sha256="${first_csaf}.sha256"
-    first_sha512="${first_csaf}.sha512"
     cp "$first_csaf" "$target_dir/"
-    for src in "$first_signature" "$first_sha256" "$first_sha512"; do
-         if [ -f "$src" ]; then
-             cp "$src" "$target_dir/"
-         fi
-    done
 done
 
 if ! command -v jq &> /dev/null; then
@@ -47,10 +40,10 @@ function fake_docs() {
     tlp=$(echo "$Tlp" | tr '[:upper:]' '[:lower:]')
 
     white_csafs=$(find $dirname/white -type f -name "*.json")
-    year_dirs=$(ls "$dirname/white/")
+    some_years=$(ls "$dirname/white/")
     echo "Faking some $TLP CSAF documents"
     mkdir -p "$dirname/$tlp"
-    for year in $year_dirs; do
+    for year in $some_years; do
         mkdir -p $dirname/$tlp/$year
     done
     for file in $white_csafs; do
