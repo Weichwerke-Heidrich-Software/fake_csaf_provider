@@ -1,5 +1,6 @@
 import datetime
 import flask
+import hashlib
 import json
 import pgpy
 
@@ -82,6 +83,25 @@ def _create_signature(json_path: Path) -> str:
     return str(signature)
 
 
+def _create_hash(json_path: Path, algorithm: str) -> str:
+    """Create a hash of the JSON file using the specified algorithm (sha256 or sha512)."""
+    if not json_path.exists():
+        raise FileNotFoundError(f"JSON file not found at {json_path}")
+    
+    json_content = json_path.read_bytes()
+    
+    if algorithm == 'sha256':
+        hash_obj = hashlib.sha256(json_content)
+    elif algorithm == 'sha512':
+        hash_obj = hashlib.sha512(json_content)
+    else:
+        raise ValueError(f"Unsupported hash algorithm: {algorithm}")
+    
+    hash_hex = hash_obj.hexdigest()
+    filename = json_path.name
+    return f"{hash_hex}  {filename}\n"
+
+
 def send_csaf(tlp, year, filename):
     if filename.endswith('.asc'):
         # Remove the .asc extension to get the JSON filename
@@ -97,6 +117,36 @@ def send_csaf(tlp, year, filename):
             return response
         except Exception as e:
             flask.abort(500, description=f"Failed to create signature: {str(e)}")
+    
+    if filename.endswith('.sha256'):
+        # Remove the .sha256 extension to get the JSON filename
+        json_filename = filename[:-7]
+        json_path = _csaf_dir / tlp / year / json_filename
+        
+        if not json_path.is_file():
+            flask.abort(404, description="CSAF file not found")
+        
+        try:
+            hash_content = _create_hash(json_path, 'sha256')
+            response = flask.Response(hash_content, mimetype='text/plain')
+            return response
+        except Exception as e:
+            flask.abort(500, description=f"Failed to create SHA-256 hash: {str(e)}")
+    
+    if filename.endswith('.sha512'):
+        # Remove the .sha512 extension to get the JSON filename
+        json_filename = filename[:-7]
+        json_path = _csaf_dir / tlp / year / json_filename
+        
+        if not json_path.is_file():
+            flask.abort(404, description="CSAF file not found")
+        
+        try:
+            hash_content = _create_hash(json_path, 'sha512')
+            response = flask.Response(hash_content, mimetype='text/plain')
+            return response
+        except Exception as e:
+            flask.abort(500, description=f"Failed to create SHA-512 hash: {str(e)}")
     
     # Handle regular JSON file requests
     path = _csaf_dir / tlp / year / filename

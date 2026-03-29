@@ -23,6 +23,10 @@ directory_listing=0
 rolie_feed=0
 # Offer OpenPGP public key via /.well-known/openpgpkey.asc (advertised in security.txt)
 openpgp=0
+# Offer SHA-256 hashes for CSAF documents
+sha256=0
+# Offer SHA-512 hashes for CSAF documents
+sha512=0
 # Set a rate limit
 rate_limit_requests=0
 rate_limit_period_seconds=0
@@ -68,6 +72,14 @@ while [[ $# -gt 0 ]]; do
             openpgp=1
             shift
             ;;
+        --sha256)
+            sha256=1
+            shift
+            ;;
+        --sha512)
+            sha512=1
+            shift
+            ;;
         --rate-limit)
             if [[ $# -lt 3 ]]; then
                 echo "Error: --rate-limit requires two arguments: <requests> <period_seconds>"
@@ -88,6 +100,8 @@ while [[ $# -gt 0 ]]; do
             directory_listing=1
             rolie_feed=1
             openpgp=1
+            sha256=1
+            sha512=1
             shift
             ;;
         --verify)
@@ -117,6 +131,8 @@ payload=$(cat <<JSON
     "directory_listing": $(to_bool "$directory_listing"),
     "rolie_feed": $(to_bool "$rolie_feed"),
     "openpgp": $(to_bool "$openpgp"),
+    "sha256": $(to_bool "$sha256"),
+    "sha512": $(to_bool "$sha512"),
     "rate_limit_requests": $rate_limit_requests,
     "rate_limit_period_seconds": $rate_limit_period_seconds
 }
