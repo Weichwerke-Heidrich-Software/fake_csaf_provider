@@ -202,6 +202,7 @@ function test_rate_limit() {
 csaf_path=$(./scripts/find_csaf_path.sh "white")
 
 # Verify the server configuration
+expect_url "/obscure/path/to/provider-metadata.json" "1" # Should always be available.
 expect_url "/.well-known/csaf/provider-metadata.json" "$well_known_meta"
 expect_url "/security/data/csaf/provider-metadata.json" "$security_data_meta"
 expect_url "/advisories/csaf/provider-metadata.json" "$advisories_csaf_meta"
