@@ -1,5 +1,6 @@
 import datetime
 import flask
+import json as json_module
 import threading
 
 from .files import collect_current_release_dates
@@ -43,6 +44,7 @@ def set_state(json: dict):
         _state['sha512'] = json.get('sha512', False)
         _state['rate_limit_requests'] = json.get('rate_limit_requests', 0)
         _state['rate_limit_period_seconds'] = json.get('rate_limit_period_seconds', 0)
+        flask.current_app.logger.info(f'State updated:\n{json_module.dumps(_state, indent=2)}')
 
     with _rate_limit_lock:
         _rate_limit_store.clear()
@@ -62,7 +64,7 @@ def configure():
     if not isinstance(body, dict):
         return flask.jsonify({'error': 'expected JSON object'}), 400
     set_state(body)
-    return 'Configured server', 200
+    return 'Configured server.', 200
 
 
 def offer_if_enabled(feature_name, return_value):

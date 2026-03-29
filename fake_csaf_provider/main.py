@@ -2,6 +2,7 @@
 A simple, dynamically configurable, fake CSAF provider server used for testing.
 """
 
+import logging
 import pathlib
 import ssl
 
@@ -9,6 +10,11 @@ from .server import app
 from .state import initialize_current_release_dates
 from .util import domain, port
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
 
 initialize_current_release_dates()
 
@@ -30,9 +36,9 @@ def create_ssl_context():
         # The auth module will enforce requirements on protected routes
         context.verify_mode = ssl.CERT_OPTIONAL
         context.check_hostname = False
-        print(f'Client certificate verification enabled using CA: {ca_path}')
+        app.logger.info(f'Client certificate verification enabled using CA: {ca_path}')
     else:
-        print(f'CA certificate not found at {ca_path}, client auth disabled')
+        app.logger.info(f'CA certificate not found at {ca_path}, client auth disabled')
     
     return context
 

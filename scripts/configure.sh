@@ -147,6 +147,7 @@ function configure_server() {
         -d "$payload" \
         --cacert "${CERT_PATH}" \
         "${SERVER}/config"
+    echo ""
 }
 
 configure_server
