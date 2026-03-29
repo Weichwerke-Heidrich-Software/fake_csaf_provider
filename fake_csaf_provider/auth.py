@@ -53,26 +53,26 @@ def validate_client_certificate(cert: x509.Certificate, ca_path: str) -> bool:
         not_after = cert.not_valid_after_utc
         
         if not (not_before <= now <= not_after):
-            print(f"Certificate expired or not yet valid")
+            print(f'Certificate expired or not yet valid')
             return False
         
         # Load and verify CA certificate
         ca_cert_path = Path(ca_path)
         if not ca_cert_path.exists():
-            print(f"CA certificate not found at {ca_path}")
+            print(f'CA certificate not found at {ca_path}')
             return False
         
         ca_cert = x509.load_pem_x509_certificate(ca_cert_path.read_bytes(), default_backend())
         
         # Verify issuer matches CA subject
         if cert.issuer != ca_cert.subject:
-            print(f"Certificate not signed by CA")
+            print(f'Certificate not signed by CA')
             return False
         
         return True
         
     except Exception as e:
-        print(f"Certificate validation failed: {e}")
+        print(f'Certificate validation failed: {e}')
         return False
 
 
@@ -100,7 +100,7 @@ def require_client_cert(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not is_client_authenticated():
-            flask.abort(403, description="Valid client certificate required")
+            flask.abort(403, description='Valid client certificate required')
         
         return f(*args, **kwargs)
     

@@ -4,10 +4,10 @@ import os
 from .auth import is_client_authenticated
 from .state import get_config
 
-domain = os.environ.get("FAKE_CSAF_DOMAIN", "localhost")
-port = os.environ.get("FAKE_CSAF_PORT", 34443)
-port_print = f":{port}" if port not in (80, 443) else ""
-domain_print = f"{domain}{port_print}"
+domain = os.environ.get('FAKE_CSAF_DOMAIN', 'localhost')
+port = os.environ.get('FAKE_CSAF_PORT', 34443)
+port_print = f':{port}' if port not in (80, 443) else ''
+domain_print = f'{domain}{port_print}'
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
@@ -16,9 +16,9 @@ def now():
 def security_txt_content(canonical_path: str):
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).replace(microsecond=0).isoformat()
     
-    openpgp_line = ""
+    openpgp_line = ''
     if get_config('openpgp'):
-        openpgp_line = f"\n# Our OpenPGP key\nEncryption: https://{domain_print}/.well-known/openpgpkey.asc\n"
+        openpgp_line = f'\n# Our OpenPGP key\nEncryption: https://{domain_print}/.well-known/openpgpkey.asc\n'
     
     # Most of this is just example content.
     # Only the URLs behind Canonical, CSAF and Encryption are supported.

@@ -18,23 +18,23 @@ def rolie_feed(tlp):
     
     tlp_display = tlp.upper()
     rolie = {
-      "feed": {
-        "id": f"csaf-feed-tlp-{tlp}",
-        "title": f"CSAF feed (TLP:{tlp_display})",
-        "link": [
+      'feed': {
+        'id': f'csaf-feed-tlp-{tlp}',
+        'title': f'CSAF feed (TLP:{tlp_display})',
+        'link': [
           {
-            "rel": "self",
-            "href": f"https://{domain_print}{feed_path}"
+            'rel': 'self',
+            'href': f'https://{domain_print}{feed_path}'
           }
         ],
-        "category": [
+        'category': [
           {
-            "scheme": "urn:ietf:params:rolie:category:information-type",
-            "term": "csaf"
+            'scheme': 'urn:ietf:params:rolie:category:information-type',
+            'term': 'csaf'
           }
         ],
-        "updated": updated_str,
-        "entry": []
+        'updated': updated_str,
+        'entry': []
       }
     }
     
@@ -46,39 +46,39 @@ def rolie_feed(tlp):
         updated_str = now()
       id = read_csaf_id(year, file, tlp)
       entry = {
-          "id": f"{id}",
-          "title": f"{id}",
-          "link": [
+          'id': f'{id}',
+          'title': f'{id}',
+          'link': [
             {
-              "rel": "self",
-              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}"
+              'rel': 'self',
+              'href': f'https://{domain_print}{csaf_dir}/{year}/{file}'
             }
           ],
-          "published": updated_str, # This is not technically correct, but irrelevant for our purposes.
-          "updated": updated_str,
-          "content": {
-            "type": "application/json",
-            "src": f"https://{domain_print}{csaf_dir}/{year}/{file}"
+          'published': updated_str, # This is not technically correct, but irrelevant for our purposes.
+          'updated': updated_str,
+          'content': {
+            'type': 'application/json',
+            'src': f'https://{domain_print}{csaf_dir}/{year}/{file}'
           },
-          "format": {
-            "schema": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
-            "version": "2.0"
+          'format': {
+            'schema': 'https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json',
+            'version': '2.0'
           }
         }
       if get_config('openpgp'):
-          entry["link"].append({
-              "rel": "signature",
-              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.asc"
+          entry['link'].append({
+              'rel': 'signature',
+              'href': f'https://{domain_print}{csaf_dir}/{year}/{file}.asc'
           })
       if get_config('sha256'):
-          entry["link"].append({
-              "rel": "hash",
-              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.sha256"
+          entry['link'].append({
+              'rel': 'hash',
+              'href': f'https://{domain_print}{csaf_dir}/{year}/{file}.sha256'
           })
       if get_config('sha512'):
-          entry["link"].append({
-              "rel": "hash",
-              "href": f"https://{domain_print}{csaf_dir}/{year}/{file}.sha512"
+          entry['link'].append({
+              'rel': 'hash',
+              'href': f'https://{domain_print}{csaf_dir}/{year}/{file}.sha512'
           })
       rolie['feed']['entry'].append(entry)
     return flask.jsonify(rolie)

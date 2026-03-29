@@ -31,7 +31,7 @@ def enforce_rate_limit():
     is_allowed = int(headers.get('X-RateLimit-Remaining', 100)) > 0
     if not is_allowed:
         retry_after = str(get_retry_after_seconds())
-        resp = flask.jsonify({"error": "Too Many Requests"})
+        resp = flask.jsonify({'error': 'Too Many Requests'})
         resp.status_code = 429
         resp.headers['Retry-After'] = retry_after
         return resp
@@ -39,7 +39,7 @@ def enforce_rate_limit():
 
 @app.after_request
 def attach_rate_limit_headers(response):
-    headers = getattr(flask.g, "rate_limit_headers", None)
+    headers = getattr(flask.g, 'rate_limit_headers', None)
     if headers:
         for k, v in headers.items():
             response.headers[k] = str(v)
@@ -98,7 +98,7 @@ def directory_listing_changes():
 
 @app.route(f'{directory_listing_base_path("white")}/<string:year>/<string:filename>', methods=['GET'])
 def dir_listing_csaf(year, filename):
-    return send_doc("white", year, filename)
+    return send_doc('white', year, filename)
 
 
 @app.route(f'{directory_listing_base_path("clear")}/index.txt', methods=['GET'])
@@ -113,7 +113,7 @@ def directory_listing_changes_clear():
 
 @app.route(f'{directory_listing_base_path("clear")}/<string:year>/<string:filename>', methods=['GET'])
 def dir_listing_csaf_clear(year, filename):
-    return send_doc("clear", year, filename)
+    return send_doc('clear', year, filename)
 
 
 @app.route(f'{directory_listing_base_path("green")}/index.txt', methods=['GET'])
@@ -131,7 +131,7 @@ def directory_listing_changes_green():
 @app.route(f'{directory_listing_base_path("green")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def dir_listing_csaf_green(year, filename):
-    return send_doc("green", year, filename)
+    return send_doc('green', year, filename)
 
 
 @app.route(f'{directory_listing_base_path("amber")}/index.txt', methods=['GET'])
@@ -149,7 +149,7 @@ def directory_listing_changes_amber():
 @app.route(f'{directory_listing_base_path("amber")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def dir_listing_csaf_amber(year, filename):
-    return send_doc("amber", year, filename)
+    return send_doc('amber', year, filename)
 
 
 @app.route(f'{directory_listing_base_path("amber-strict")}/index.txt', methods=['GET'])
@@ -167,7 +167,7 @@ def directory_listing_changes_amber_strict():
 @app.route(f'{directory_listing_base_path("amber-strict")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def dir_listing_csaf_amber_strict(year, filename):
-    return send_doc("amber+strict", year, filename)
+    return send_doc('amber+strict', year, filename)
 
 
 @app.route(f'{directory_listing_base_path("red")}/index.txt', methods=['GET'])
@@ -185,7 +185,7 @@ def directory_listing_changes_red():
 @app.route(f'{directory_listing_base_path("red")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def dir_listing_csaf_red(year, filename):
-    return send_doc("red", year, filename)
+    return send_doc('red', year, filename)
 
 
 @app.route(f'{directory_listing_base_path("unlabeled")}/index.txt', methods=['GET'])
@@ -203,7 +203,7 @@ def directory_listing_changes_unlabeled():
 @app.route(f'{directory_listing_base_path("unlabeled")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def dir_listing_csaf_unlabeled(year, filename):
-    return send_doc("unlabeled", year, filename)
+    return send_doc('unlabeled', year, filename)
 
 
 @app.route(rolie_feed_path('white'), methods=['GET'])
@@ -246,52 +246,52 @@ def rolie_feed_unlabeled():
     return offer_if_enabled('rolie_feed', rolie_feed('unlabeled'))
 
 
-@app.route(f'{rolie_feed_csaf_dir('white')}/<string:year>/<string:filename>', methods=['GET'])
+@app.route(f'{rolie_feed_csaf_dir("white")}/<string:year>/<string:filename>', methods=['GET'])
 def rolie_feed_csaf(year, filename):
-    return send_doc("white", year, filename)
+    return send_doc('white', year, filename)
 
 
 @app.route(f'{rolie_feed_csaf_dir("clear")}/<string:year>/<string:filename>', methods=['GET'])
 def rolie_feed_csaf_clear(year, filename):
-    return send_doc("clear", year, filename)
+    return send_doc('clear', year, filename)
 
 
 @app.route(f'{rolie_feed_csaf_dir("green")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def rolie_feed_csaf_green(year, filename):
-    return send_doc("green", year, filename)
+    return send_doc('green', year, filename)
 
 
 @app.route(f'{rolie_feed_csaf_dir("amber")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def rolie_feed_csaf_amber(year, filename):
-    return send_doc("amber", year, filename)
+    return send_doc('amber', year, filename)
 
 
 @app.route(f'{rolie_feed_csaf_dir("amber-strict")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def rolie_feed_csaf_amber_strict(year, filename):
-    return send_doc("amber+strict", year, filename)
+    return send_doc('amber+strict', year, filename)
 
 
 @app.route(f'{rolie_feed_csaf_dir("red")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def rolie_feed_csaf_red(year, filename):
-    return send_doc("red", year, filename)
+    return send_doc('red', year, filename)
 
 
 @app.route(f'{rolie_feed_csaf_dir("unlabeled")}/<string:year>/<string:filename>', methods=['GET'])
 @require_client_cert
 def rolie_feed_csaf_unlabeled(year, filename):
-    return send_doc("unlabeled", year, filename)
+    return send_doc('unlabeled', year, filename)
 
 
 @app.route('/.well-known/openpgpkey.asc', methods=['GET'])
 def openpgp_key():
     project_root = pathlib.Path(__file__).resolve().parents[1]
-    key_path = project_root / "crypto" / "openpgp.pub.asc"
+    key_path = project_root / 'crypto' / 'openpgp.pub.asc'
     
     if not key_path.exists():
-        flask.abort(404, description="OpenPGP public key not found")
+        flask.abort(404, description='OpenPGP public key not found')
     
     return offer_if_enabled('openpgp', flask.send_file(str(key_path), mimetype='application/pgp-keys'))

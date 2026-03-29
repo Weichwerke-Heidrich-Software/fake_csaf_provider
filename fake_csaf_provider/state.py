@@ -5,23 +5,23 @@ import threading
 from .files import collect_current_release_dates
 
 _state = {
-    "well_known_meta": False,
-    "security_data_meta": False,
-    "advisories_csaf_meta": False,
-    "security_csaf_meta": False,
-    "security_txt": False,
-    "directory_listing": False,
-    "rolie_feed": False,
-    "openpgp": False,
-    "sha256": False,
-    "sha512": False,
-    "rate_limit_requests": 0,
-    "rate_limit_period_seconds": 0,
+    'well_known_meta': False,
+    'security_data_meta': False,
+    'advisories_csaf_meta': False,
+    'security_csaf_meta': False,
+    'security_txt': False,
+    'directory_listing': False,
+    'rolie_feed': False,
+    'openpgp': False,
+    'sha256': False,
+    'sha512': False,
+    'rate_limit_requests': 0,
+    'rate_limit_period_seconds': 0,
 }
 _state_lock = threading.Lock()
 
 _cache = {
-    "current_release_dates": {},
+    'current_release_dates': {},
 }
 _cache_lock = threading.Lock()
 
@@ -57,12 +57,12 @@ def configure():
         flask.abort(405)
 
     if not flask.request.is_json:
-        return flask.jsonify({"error": "expected application/json"}), 400
+        return flask.jsonify({'error': 'expected application/json'}), 400
     body = flask.request.get_json()
     if not isinstance(body, dict):
-        return flask.jsonify({"error": "expected JSON object"}), 400
+        return flask.jsonify({'error': 'expected JSON object'}), 400
     set_state(body)
-    return "Configured server", 200        
+    return 'Configured server', 200
 
 
 def offer_if_enabled(feature_name, return_value):

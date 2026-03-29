@@ -29,12 +29,12 @@ from cryptography.x509.oid import NameOID
 from cryptography.utils import CryptographyDeprecationWarning
 
 
-DEFAULT_OUTDIR = Path("./crypto")
+DEFAULT_OUTDIR = Path('./crypto')
 DEFAULT_DAYS = 365
 KEY_SIZE = 2048
-DEFAULT_COMMON_NAME = "localhost"
-DEFAULT_SAN = ["localhost", "127.0.0.1", "::1"]
-CA_NAME = "Fake CA"
+DEFAULT_COMMON_NAME = 'localhost'
+DEFAULT_SAN = ['localhost', '127.0.0.1', '::1']
+CA_NAME = 'Fake CA'
 
 
 def make_rsa_key(key_size: int = 2048) -> rsa.RSAPrivateKey:
@@ -184,15 +184,15 @@ def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path) -> tuple[rsa.RSAPriv
                 not_after = not_after.replace(tzinfo=datetime.timezone.utc)
 
             if not_before <= now <= not_after:
-                print(f"Found existing CA certificate at {ca_cert_path}. It will be reused.")
+                print(f'Found existing CA certificate at {ca_cert_path}. It will be reused.')
                 return key, cert
             else:
-                print(f"Existing CA certificate at {ca_cert_path} is expired or not yet valid. It will be regenerated.")
+                print(f'Existing CA certificate at {ca_cert_path} is expired or not yet valid. It will be regenerated.')
         except Exception as e:
-            print(f"Failed to load existing CA files: {e}.\nNew CA files will be regenerated.")
+            print(f'Failed to load existing CA files: {e}.\nNew CA files will be regenerated.')
 
     # build and persist a new CA
-    print(f"Generating new CA certificate at {ca_cert_path}.")
+    print(f'Generating new CA certificate at {ca_cert_path}.')
     key = make_rsa_key(KEY_SIZE)
     cert = build_ca(key, CA_NAME, 1000)
     write_key(ca_key_path, key)
@@ -201,24 +201,24 @@ def load_or_build_ca(ca_key_path: Path, ca_cert_path: Path) -> tuple[rsa.RSAPriv
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Generate a test CA and a localhost TLS certificate.")
+    parser = argparse.ArgumentParser(description='Generate a test CA and a localhost TLS certificate.')
     parser.add_argument(
-        "common_name",
-        nargs="?",
+        'common_name',
+        nargs='?',
         default=DEFAULT_COMMON_NAME,
-        help=f"Server certificate common name (default: {DEFAULT_COMMON_NAME})",
+        help=f'Server certificate common name (default: {DEFAULT_COMMON_NAME})',
     )
-    parser.add_argument("-d", "--days", type=int, default=DEFAULT_DAYS, help=f"Certificate validity days (default: {DEFAULT_DAYS})")
+    parser.add_argument('-d', '--days', type=int, default=DEFAULT_DAYS, help=f'Certificate validity days (default: {DEFAULT_DAYS})')
     parser.add_argument(
-        "-o",
-        "--outdir",
+        '-o',
+        '--outdir',
         default=str(DEFAULT_OUTDIR),
-        help=f"Output directory (default: {DEFAULT_OUTDIR})",
+        help=f'Output directory (default: {DEFAULT_OUTDIR})',
     )
     parser.add_argument(
-        "--client-cert",
-        metavar="NAME",
-        help="Generate a client certificate with the given name (stored in outdir/)",
+        '--client-cert',
+        metavar='NAME',
+        help='Generate a client certificate with the given name (stored in outdir/)',
     )
 
     args = parser.parse_args(argv)
@@ -227,11 +227,11 @@ def main(argv: list[str] | None = None) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
 
     files = {
-        "ca_key": outdir / "ca.key.pem",
-        "ca_cert": outdir / "ca.crt.pem",
+        'ca_key': outdir / 'ca.key.pem',
+        'ca_cert': outdir / 'ca.crt.pem',
     }
-
-    ca_key, ca_cert = load_or_build_ca(files["ca_key"], files["ca_cert"])
+    
+    ca_key, ca_cert = load_or_build_ca(files['ca_key'], files['ca_cert'])
 
     if args.client_cert:
         # Generate client certificate
@@ -239,26 +239,26 @@ def main(argv: list[str] | None = None) -> None:
         client_cert = build_client_cert(client_key, ca_key, ca_cert, args.client_cert, args.days)
         
         client_files = {
-            "client_key": outdir / f"{args.client_cert}.key.pem",
-            "client_cert": outdir / f"{args.client_cert}.crt.pem",
-            "client_pem": outdir / f"{args.client_cert}.chain.pem",
+            'client_key': outdir / f'{args.client_cert}.key.pem',
+            'client_cert': outdir / f'{args.client_cert}.crt.pem',
+            'client_pem': outdir / f'{args.client_cert}.chain.pem',
         }
         
-        write_key(client_files["client_key"], client_key)
-        write_cert(client_files["client_cert"], client_cert)
+        write_key(client_files['client_key'], client_key)
+        write_cert(client_files['client_cert'], client_cert)
         
         # client certificate chain (client cert + CA cert, no private key)
-        client_pem_data = client_files["client_cert"].read_bytes() + b"\n" + files["ca_cert"].read_bytes()
-        client_files["client_pem"].write_bytes(client_pem_data)
+        client_pem_data = client_files['client_cert'].read_bytes() + b'\n' + files['ca_cert'].read_bytes()
+        client_files['client_pem'].write_bytes(client_pem_data)
         
-        print("Wrote client certificate:")
+        print('Wrote client certificate:')
         for k, p in client_files.items():
-            print(f" - {p}")
+            print(f' - {p}')
     else:
         # Generate server certificate
-        files["server_key"] = outdir / f"{args.common_name}.key.pem"
-        files["server_cert"] = outdir / f"{args.common_name}.crt.pem"
-        files["server_pem"] = outdir / f"{args.common_name}.chain.pem"
+        files['server_key'] = outdir / f'{args.common_name}.key.pem'
+        files['server_cert'] = outdir / f'{args.common_name}.crt.pem'
+        files['server_pem'] = outdir / f'{args.common_name}.chain.pem'
         
         server_key = make_rsa_key(KEY_SIZE)
         sans = DEFAULT_SAN
@@ -267,17 +267,17 @@ def main(argv: list[str] | None = None) -> None:
         server_cert = build_server_cert(server_key, ca_key, ca_cert, args.common_name, sans, args.days)
 
         # write server files
-        write_key(files["server_key"], server_key)
-        write_cert(files["server_cert"], server_cert)
-
+        write_key(files['server_key'], server_key)
+        write_cert(files['server_cert'], server_cert)
+        
         # server certificate chain (server cert + CA cert, no private key)
-        server_pem_data = files["server_cert"].read_bytes() + b"\n" + files["ca_cert"].read_bytes()
-        files["server_pem"].write_bytes(server_pem_data)
-
-        print("Wrote:")
+        server_pem_data = files['server_cert'].read_bytes() + b'\n' + files['ca_cert'].read_bytes()
+        files['server_pem'].write_bytes(server_pem_data)
+        
+        print('Wrote:')
         for k, p in files.items():
-            print(f" - {p}")
+            print(f' - {p}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

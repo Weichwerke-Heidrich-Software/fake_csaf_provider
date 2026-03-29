@@ -13,3 +13,7 @@ $venv_py -m pip list --format=freeze \
     | cut -d= -f1 \
     | xargs -r $venv_py -m pip install -U
 $venv_py -m pip freeze > ./requirements.txt
+
+if command -v docker; then
+    docker build -t fake_csaf_provider .
+fi

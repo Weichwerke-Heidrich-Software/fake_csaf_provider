@@ -16,10 +16,10 @@ import pgpy
 from pgpy.constants import PubKeyAlgorithm, KeyFlags, HashAlgorithm, SymmetricKeyAlgorithm, CompressionAlgorithm, EllipticCurveOID
 
 
-DEFAULT_OUTDIR = Path("./crypto")
-DEFAULT_NAME = "Fake CSAF Provider"
-DEFAULT_EMAIL = "fake-csaf-provider@example.com"
-DEFAULT_COMMENT = "Generated for testing"
+DEFAULT_OUTDIR = Path('./crypto')
+DEFAULT_NAME = 'Fake CSAF Provider'
+DEFAULT_EMAIL = 'fake-csaf-provider@example.com'
+DEFAULT_COMMENT = 'Generated for testing'
 
 
 def generate_openpgp_keypair(
@@ -106,7 +106,7 @@ def load_or_generate_keypair(
             public_key_obj, _ = pgpy.PGPKey.from_blob(public_key_text)
             
             # Create a test message and sign it with the private key
-            test_message = "test message for key validation"
+            test_message = 'test message for key validation'
             signature = private_key_obj.sign(test_message)
             
             # Verify the signature with the public key
@@ -115,12 +115,12 @@ def load_or_generate_keypair(
                 print(f"Found existing OpenPGP key pair at {private_key_path}. It will be reused.")
                 return private_key_text, public_key_text
             else:
-                print(f"Existing key pair signature verification failed. A new one will be generated.")
+                print(f'Existing key pair signature verification failed. A new one will be generated.')
         except Exception as e:
-            print(f"Failed to load existing OpenPGP key pair: {e}.\nA new key pair will be generated.")
+            print(f'Failed to load existing OpenPGP key pair: {e}.\nA new key pair will be generated.')
     
     # Generate new key pair
-    print(f"Generating new OpenPGP key pair (ED25519) at {private_key_path}.")
+    print(f'Generating new OpenPGP key pair (ED25519) at {private_key_path}.')
     private_key, public_key = generate_openpgp_keypair(name, email, comment)
     
     # Write keys to files
@@ -133,28 +133,28 @@ def load_or_generate_keypair(
 def main(argv: list[str] | None = None) -> None:
     """Main entry point for OpenPGP key generation."""
     parser = argparse.ArgumentParser(
-        description="Generate an OpenPGP key pair for testing purposes using ED25519."
+        description='Generate an OpenPGP key pair for testing purposes using ED25519.'
     )
     parser.add_argument(
-        "--name",
+        '--name',
         default=DEFAULT_NAME,
-        help=f"Name for the key (default: {DEFAULT_NAME})",
+        help=f'Name for the key (default: {DEFAULT_NAME})',
     )
     parser.add_argument(
-        "--email",
+        '--email',
         default=DEFAULT_EMAIL,
-        help=f"Email for the key (default: {DEFAULT_EMAIL})",
+        help=f'Email for the key (default: {DEFAULT_EMAIL})',
     )
     parser.add_argument(
-        "--comment",
+        '--comment',
         default=DEFAULT_COMMENT,
-        help=f"Comment for the key (default: {DEFAULT_COMMENT})",
+        help=f'Comment for the key (default: {DEFAULT_COMMENT})',
     )
     parser.add_argument(
-        "-o",
-        "--outdir",
+        '-o',
+        '--outdir',
         default=str(DEFAULT_OUTDIR),
-        help=f"Output directory (default: {DEFAULT_OUTDIR})",
+        help=f'Output directory (default: {DEFAULT_OUTDIR})',
     )
     
     args = parser.parse_args(argv)
@@ -162,8 +162,8 @@ def main(argv: list[str] | None = None) -> None:
     outdir: Path = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     
-    private_key_path = outdir / "openpgp.key.asc"
-    public_key_path = outdir / "openpgp.pub.asc"
+    private_key_path = outdir / 'openpgp.key.asc'
+    public_key_path = outdir / 'openpgp.pub.asc'
     
     private_key, public_key = load_or_generate_keypair(
         private_key_path,
@@ -173,10 +173,10 @@ def main(argv: list[str] | None = None) -> None:
         args.comment,
     )
     
-    print("Wrote:")
-    print(f" - {private_key_path} (private key, ED25519)")
-    print(f" - {public_key_path} (public key, ED25519)")
+    print('Wrote:')
+    print(f' - {private_key_path} (private key, ED25519)')
+    print(f' - {public_key_path} (public key, ED25519)')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

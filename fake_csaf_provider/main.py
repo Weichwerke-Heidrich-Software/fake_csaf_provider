@@ -13,9 +13,9 @@ from .util import domain, port
 initialize_current_release_dates()
 
 project_root = pathlib.Path(__file__).resolve().parents[1]
-cert_path = project_root / "crypto" / f"{domain}.crt.pem"
-key_path = project_root / "crypto" / f"{domain}.key.pem"
-ca_path = project_root / "crypto" / "ca.crt.pem"
+cert_path = project_root / 'crypto' / f'{domain}.crt.pem'
+key_path = project_root / 'crypto' / f'{domain}.key.pem'
+ca_path = project_root / 'crypto' / 'ca.crt.pem'
 
 
 def create_ssl_context():
@@ -30,16 +30,16 @@ def create_ssl_context():
         # The auth module will enforce requirements on protected routes
         context.verify_mode = ssl.CERT_OPTIONAL
         context.check_hostname = False
-        print(f"Client certificate verification enabled using CA: {ca_path}")
+        print(f'Client certificate verification enabled using CA: {ca_path}')
     else:
-        print(f"CA certificate not found at {ca_path}, client auth disabled")
+        print(f'CA certificate not found at {ca_path}, client auth disabled')
     
     return context
 
 
 if __name__ == '__main__':
     if not cert_path.exists() or not key_path.exists():
-        raise FileNotFoundError(f"TLS certificate or key not found: {cert_path}, {key_path}\nHave you run the setup script?")
+        raise FileNotFoundError(f'TLS certificate or key not found: {cert_path}, {key_path}\nHave you run the setup script?')
     
     ssl_ctx = create_ssl_context()
     host = '127.0.0.1'
