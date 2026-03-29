@@ -12,6 +12,8 @@ from .util import security_txt_content
 
 
 app = flask.Flask(__name__)
+# Disable host validation to allow requests from any hostname (useful in Docker networks)
+app.config['SERVER_NAME'] = None
 
 
 @app.before_request
