@@ -47,6 +47,39 @@ This will create a fake certificate with a validity of 30 days and store it to `
 > [!IMPORTANT]
 > The fake certificate is of course signed by a fake certificate authority. Its certificate is found in the output folder under `ca.crt.pem`. The client needs to accept this fake certificate as valid, otherwise it will refuse to connect to the server.
 
+### OpenPGP Signatures
+
+The server can provide OpenPGP signatures for CSAF documents, which is required by the CSAF standard for the CSAF Trusted Provider. When enabled, the server signs each CSAF document and makes the signatures available alongside the documents.
+
+#### Generating OpenPGP Keys
+
+The setup script automatically generates an OpenPGP key pair. To create a new key pair manually:
+
+```sh
+python3 -m fake_openpgp_key.main
+```
+
+This creates:
+- `crypto/openpgp.key.asc` - Private key (ED25519, used for signing)
+- `crypto/openpgp.pub.asc` - Public key (ED25519, distributed to clients)
+
+> [!NOTE]
+> If valid keys already exist, the script will reuse them instead of generating new ones. This ensures signature consistency across server restarts.
+
+#### Enabling OpenPGP Signatures
+
+To enable OpenPGP signatures, add the `--openpgp` flag when configuring the server:
+
+```sh
+scripts/configure.sh --well-known-meta --rolie-feed --openpgp
+```
+
+When enabled, the server provides:
+- **Public key endpoint**: `/.well-known/openpgpkey.asc` - Clients can download the public key to verify signatures
+- **Document signatures**: For each CSAF document (e.g., `advisory.json`), a detached signature file (e.g., `advisory.json.asc`) is automatically generated and served
+- **Security.txt integration**: The public key URL is advertised in `security.txt` under the `Encryption:` field
+- **ROLIE feed integration**: Signature links are included in ROLIE feed entries with `rel="signature"`
+
 ### Running servers in parallel
 
 Testing to access several separate servers is most easily achieved via several docker containers. Since these will (inside the Docker network) be reachable under different domains, they require different TLS certificates to authenticate to the client. These can be generated via:

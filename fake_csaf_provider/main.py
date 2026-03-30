@@ -7,7 +7,6 @@ import pathlib
 import ssl
 
 from .server import app
-from .state import initialize_current_release_dates
 from .util import domain, port
 
 # Configure logging
@@ -15,8 +14,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
-
-initialize_current_release_dates()
 
 project_root = pathlib.Path(__file__).resolve().parents[1]
 cert_path = project_root / 'crypto' / f'{domain}.crt.pem'

@@ -8,10 +8,16 @@ from .metadata import provider_metadata
 from .paths import directory_listing_base_path, rolie_feed_path, rolie_feed_csaf_dir
 from .rolie import rolie_feed, rolie_feed
 from .state import configure, offer_if_enabled, rate_limit_headers, get_retry_after_seconds, log_request
-from .util import security_txt_content
+from .util import security_txt_content, domain
 
 
 app = flask.Flask(__name__)
+# Disable host validation to allow requests from any hostname (useful in Docker networks)
+app.config['SERVER_NAME'] = None
+
+# Configure trusted hosts to prevent "host is not trusted" errors
+# Trust localhost variants and the configured domain (e.g., Docker service name)
+app.config['TRUSTED_HOSTS'] = ['localhost', '127.0.0.1', '0.0.0.0', domain]
 
 
 @app.before_request

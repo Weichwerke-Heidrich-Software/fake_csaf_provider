@@ -1,0 +1,29 @@
+services:
+  fake_csaf_provider:
+    build: .
+    container_name: fake_csaf_compose_test_server
+    networks:
+      csaf_test_network:
+        aliases:
+          - fake-csaf-provider
+    environment:
+      - FAKE_CSAF_DOMAIN=fake-csaf-provider
+      - FAKE_CSAF_PORT=443
+    volumes:
+      - ./crypto:/app/crypto:ro
+      - ./csafs:/app/csafs:ro
+
+  curl_client:
+    image: curlimages/curl:latest
+    container_name: fake_csaf_compose_test_client
+    networks:
+      - csaf_test_network
+    volumes:
+      - ./crypto:/crypto:ro
+    command: sleep infinity
+    depends_on:
+      - fake_csaf_provider
+
+networks:
+  csaf_test_network:
+    driver: bridge
