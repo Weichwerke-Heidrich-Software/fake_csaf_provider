@@ -3,7 +3,8 @@ import flask
 import json as json_module
 import threading
 
-from .files import collect_current_release_dates
+from .files import collect_current_release_dates, get_available_tlp_levels, refresh_csaf_dir
+
 
 _state = {
     'well_known_meta': False,
@@ -21,13 +22,16 @@ _state = {
 }
 _state_lock = threading.Lock()
 
+
 _cache = {
     'current_release_dates': {},
 }
 _cache_lock = threading.Lock()
 
+
 _rate_limit_store: dict[str, list[float]] = {}
 _rate_limit_lock = threading.Lock()
+
 
 def set_state(json: dict):
     with _state_lock:
@@ -64,7 +68,10 @@ def configure():
     if not isinstance(body, dict):
         return flask.jsonify({'error': 'expected JSON object'}), 400
     set_state(body)
+    
+    refresh_csaf_dir()
     refresh_current_release_dates()
+    
     return 'Configured server.', 200
 
 
@@ -78,14 +85,12 @@ def offer_if_enabled(feature_name, return_value):
 
 def refresh_current_release_dates():
     """Refresh release dates cache for all TLP levels."""
-    from .files import get_available_tlp_levels
-    
     with _cache_lock:
         _cache['current_release_dates'].clear()
         for tlp in get_available_tlp_levels():
             dates = collect_current_release_dates(tlp)
             _cache['current_release_dates'][tlp] = dates
-        flask.current_app.logger.info('Refreshed document release dates cache')
+        flask.current_app.logger.info('Refreshed document release dates cache.')
 
 
 def get_current_release_date(year: str, filename: str, tlp: str) -> datetime.datetime | None:
