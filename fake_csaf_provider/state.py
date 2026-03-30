@@ -64,6 +64,7 @@ def configure():
     if not isinstance(body, dict):
         return flask.jsonify({'error': 'expected JSON object'}), 400
     set_state(body)
+    refresh_current_release_dates()
     return 'Configured server.', 200
 
 
@@ -75,14 +76,16 @@ def offer_if_enabled(feature_name, return_value):
     return return_value
 
 
-def initialize_current_release_dates():
-    """Initialize release dates cache for all TLP levels."""
+def refresh_current_release_dates():
+    """Refresh release dates cache for all TLP levels."""
     from .files import get_available_tlp_levels
     
     with _cache_lock:
+        _cache['current_release_dates'].clear()
         for tlp in get_available_tlp_levels():
             dates = collect_current_release_dates(tlp)
             _cache['current_release_dates'][tlp] = dates
+        flask.current_app.logger.info('Refreshed document release dates cache')
 
 
 def get_current_release_date(year: str, filename: str, tlp: str) -> datetime.datetime | None:
