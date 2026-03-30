@@ -1,8 +1,7 @@
 import flask
 
-from .files import get_available_tlp_levels
 from .paths import directory_listing_base_path, rolie_feed_path
-from .state import get_config
+from .state import get_available_tlp_levels, get_config
 from .util import domain_print, now, get_accessible_tlp_levels
 
 def provider_metadata():

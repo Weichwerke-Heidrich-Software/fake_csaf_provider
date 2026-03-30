@@ -3,7 +3,7 @@ import flask
 import json as json_module
 import threading
 
-from .files import collect_current_release_dates, get_available_tlp_levels, refresh_csaf_dir
+from .files import collect_current_release_dates, read_available_tlp_levels, refresh_csaf_dir
 
 
 _state = {
@@ -25,6 +25,7 @@ _state_lock = threading.Lock()
 
 _cache = {
     'current_release_dates': {},
+    'available_tlp_labels': [],
 }
 _cache_lock = threading.Lock()
 
@@ -70,6 +71,7 @@ def configure():
     set_state(body)
     
     refresh_csaf_dir()
+    refresh_available_tlp_labels()
     refresh_current_release_dates()
     
     return 'Configured server.', 200
@@ -83,11 +85,19 @@ def offer_if_enabled(feature_name, return_value):
     return return_value
 
 
+def refresh_available_tlp_labels():
+    """Refresh the available TLP labels cache."""
+    with _cache_lock:
+        _cache['available_tlp_labels'] = read_available_tlp_levels()
+        flask.current_app.logger.info(f'Available TLP labels: {_cache["available_tlp_labels"]}')
+
+
 def refresh_current_release_dates():
     """Refresh release dates cache for all TLP levels."""
     with _cache_lock:
         _cache['current_release_dates'].clear()
-        for tlp in get_available_tlp_levels():
+        available_tlps = _cache.get('available_tlp_labels', [])
+        for tlp in available_tlps:
             dates = collect_current_release_dates(tlp)
             _cache['current_release_dates'][tlp] = dates
         flask.current_app.logger.info('Refreshed document release dates cache.')
@@ -120,6 +130,12 @@ def get_latest_release_date(tlp: str) -> datetime.datetime | None:
         if not tlp_dates:
             return None
         return max(tlp_dates.values())
+
+
+def get_available_tlp_levels() -> list[str]:
+    """Get the cached available TLP labels."""
+    with _cache_lock:
+        return _cache.get('available_tlp_labels', []).copy()
 
 
 def log_request(remote_addr: str):

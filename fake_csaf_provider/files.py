@@ -56,7 +56,7 @@ def find_advisory_files(tlp):
     return files
 
 
-def get_available_tlp_levels():
+def read_available_tlp_levels():
     """Return list of TLP directories that exist in the csafs directory."""
     levels = []
     csaf_dir = get_csaf_dir()
