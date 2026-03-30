@@ -11,6 +11,8 @@ _csaf_dir = None
 
 
 def refresh_csaf_dir():
+    """Refresh the CSAF directory by evaluating find_csaf_dir()."""
+    global _csaf_dir
     current_dir = Path(__file__).resolve().parent
     csaf_dir = current_dir / 'csafs'
     if not csaf_dir.is_dir():
